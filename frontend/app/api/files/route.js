@@ -7,7 +7,7 @@ export async function POST(request) {
 	try {
 		const data = await request.formData();
 		const file = data.get("file");
-		const uploadData = await pinata.upload.private.file(file);
+		const uploadData = await pinata.upload.public.file(file);
 		return NextResponse.json(uploadData, { status: 200 });
 	} catch (e) {
 		console.log(e);
@@ -20,7 +20,7 @@ export async function POST(request) {
 
 export async function GET() {
 	try {
-		const response = await pinata.files.private.list();
+		const response = await pinata.files.public.list();
 		return NextResponse.json(response[0]);
 	} catch (e) {
 		console.log(e);
