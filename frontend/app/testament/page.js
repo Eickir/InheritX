@@ -12,19 +12,15 @@ export default function Home() {
     const [file, setFile] = useState(null);
     const [cid, setCid] = useState("");
     const [uploading, setUploading] = useState(false);
-    const [decryptedImage, setDecryptedImage] = useState(null);
-    const [decryptedPDF, setDecryptedPDF] = useState(null);
-    const [decryptedText, setDecryptedText] = useState(null);
-    const [encryptionKey, setEncryptionKey] = useState(""); // Clé générée automatiquement
+    const [decryptedFile, setDecryptedFile] = useState(null);
+    const [encryptionKey, setEncryptionKey] = useState("");
 
     const inputFile = useRef(null);
 
-    // Fonction pour générer une clé aléatoire sécurisée
     const generateEncryptionKey = () => {
         return CryptoJS.lib.WordArray.random(32).toString();
     };
 
-    // Lire le fichier sous forme de Data URL
     const readFileAsDataURL = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -34,36 +30,34 @@ export default function Home() {
         });
     };
 
-    // Encrypt image or PDF function
     const encryptImage = async (file, secretKey) => {
         const fileData = await readFileAsDataURL(file);
         const encryptedData = CryptoJS.AES.encrypt(fileData, secretKey).toString();
         return encryptedData;
     };
 
-    // Decrypt image or PDF function
     const decryptFile = (encryptedData, secretKey) => {
         try {
             const bytes = CryptoJS.AES.decrypt(encryptedData, secretKey);
-
-            // Important: Utiliser `CryptoJS.enc.Base64` pour les données binaires
             const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
 
             console.log("Données déchiffrées :", decryptedData);
 
-            // Réinitialiser les anciens états
-            setDecryptedImage(null);
-            setDecryptedPDF(null);
-            setDecryptedText(null);
+            setDecryptedFile(null);  // Clear previous content
 
-            // Vérification du type de fichier
             if (decryptedData.startsWith('data:image/')) {
-                setDecryptedImage(decryptedData);
+                setDecryptedFile(<img src={decryptedData} alt="Decrypted" className="rounded-lg shadow-md" />);
             } else if (decryptedData.startsWith('data:application/pdf')) {
-                setDecryptedPDF(decryptedData);
+                setDecryptedFile(
+                    <iframe
+                        src={decryptedData}
+                        title="PDF Déchiffré"
+                        width="100%"
+                        height="500px"
+                    />
+                );
             } else {
-                // Si ce n'est ni une image ni un PDF, on l'affiche comme du texte
-                setDecryptedText(decryptedData);
+                setDecryptedFile(<pre>{decryptedData}</pre>);
             }
         } catch (error) {
             console.error("Erreur lors du déchiffrement :", error);
@@ -71,16 +65,17 @@ export default function Home() {
         }
     };
 
-
     const uploadFile = async () => {
+        setDecryptedFile(null);  // Clear decrypted content on new upload
+
         if (!file) {
             alert("Veuillez sélectionner un fichier avant d'envoyer.");
             return;
         }
 
         try {
-            const secretKey = generateEncryptionKey(); // Génère la clé de chiffrement
-            setEncryptionKey(secretKey); // Sauvegarde la clé générée
+            const secretKey = generateEncryptionKey();
+            setEncryptionKey(secretKey);
             const encryptedData = await encryptImage(file, secretKey);
 
             setUploading(true);
@@ -108,30 +103,30 @@ export default function Home() {
             alert("Aucun CID disponible pour récupérer le fichier.");
             return;
         }
-    
+
         try {
             let secretKey = prompt("Entrez la clé de déchiffrement :");
             if (!secretKey) return;
-            secretKey = secretKey.trim(); // Supprimer les espaces superflus
-    
+            secretKey = secretKey.trim();
+
             const response = await fetch(`https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${cid}`);
-            const encryptedData = await response.text();  // Important : `.text()` pour préserver les données chiffrées
+            const encryptedData = await response.text();
             console.log("Données chiffrées récupérées :", encryptedData);
-    
+
             decryptFile(encryptedData, secretKey);
         } catch (e) {
             console.error("Erreur lors de la récupération du fichier :", e);
             alert("Erreur lors de la récupération du fichier");
         }
     };
-    
+
     const handleChange = (e) => {
         setFile(e.target.files[0]);
     };
 
     return (
-        <>
-            <div className="flex flex-col items-center p-6">
+        <div className="flex flex-row items-start p-6 gap-6">
+            <div className="flex flex-col items-center w-1/2">
                 <Card className="w-full max-w-md">
                     <CardContent className="space-y-4">
                         <h2 className="text-xl font-bold">Uploader un fichier sur IPFS</h2>
@@ -151,35 +146,17 @@ export default function Home() {
                                 </Button>
                             </div>
                         )}
-
-                        {decryptedImage && (
-                            <div className="mt-4 p-2 border rounded-lg">
-                                <p><strong>Image Déchiffrée :</strong></p>
-                                <img src={decryptedImage} alt="Decrypted" className="rounded-lg shadow-md" />
-                            </div>
-                        )}
-
-                        {decryptedPDF && (
-                            <div className="mt-4 p-2 border rounded-lg">
-                                <p><strong>PDF Déchiffré :</strong></p>
-                                <iframe
-                                    src={decryptedPDF}
-                                    title="PDF Déchiffré"
-                                    width="100%"
-                                    height="500px"
-                                />
-                            </div>
-                        )}
-
-                        {decryptedText && (
-                            <div className="mt-4 p-2 border rounded-lg">
-                                <p><strong>Texte Déchiffré :</strong></p>
-                                <pre>{decryptedText}</pre>
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
             </div>
-        </>
+
+            {/* Zone pour afficher le fichier déchiffré */}
+            {decryptedFile && (
+                <div className="w-1/2 p-4 border rounded-lg shadow-md">
+                    <h3 className="text-xl font-bold mb-4">Fichier Déchiffré :</h3>
+                    {decryptedFile}
+                </div>
+            )}
+        </div>
     );
 }
