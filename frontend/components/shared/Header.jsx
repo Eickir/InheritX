@@ -1,6 +1,14 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+
 
 const Header = () => {
+
+const pathname = usePathname();
+const isEligible = pathname.startsWith("/testament");
+
   return (
 <header className="sticky top-0 z-50 bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
   <Link href="/">
@@ -11,6 +19,7 @@ const Header = () => {
     <a href="#about" className="text-gray-300 hover:text-blue-400">À propos</a>
     <a href="#contact" className="text-gray-300 hover:text-blue-400">Contact</a>
   </nav>
+  {isEligible && <ConnectButton />}
 </header>
   )
 }
