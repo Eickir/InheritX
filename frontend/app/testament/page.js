@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import CryptoJS from 'crypto-js';
+import SwapModalWrapper from "@/components/shared/SwapModalWraper";
 
 export default function Home() {
 
@@ -157,6 +158,9 @@ export default function Home() {
                     {decryptedFile}
                 </div>
             )}
+        
+        <SwapModalWrapper />
         </div>
+
     );
 }

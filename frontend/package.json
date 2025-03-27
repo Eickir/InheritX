@@ -20,6 +20,7 @@
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",
     "formidable": "^3.5.2",
+    "framer-motion": "^12.6.2",
     "helia": "^5.2.1-99bb059",
     "lucide-react": "^0.483.0",
     "next": "15.2.3",
