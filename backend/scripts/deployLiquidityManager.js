@@ -1,6 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
+  
   const [deployer] = await hre.ethers.getSigners();
   console.log("🚀 Deployer:", deployer.address);
 
@@ -73,6 +74,22 @@ async function main() {
   } catch (err) {
     console.error("❌ Could not fetch pair address:", err);
   }
+
+  // 8. Deploy ValidatorPool
+  const ValidatorPool = await hre.ethers.getContractFactory("ValidatorPool");
+  const validatorPool = await ValidatorPool.deploy(tokenAAddress, 5_000);
+  await validatorPool.waitForDeployment();
+  const validatorPoolAddress = await validatorPool.getAddress();
+  console.log("✅ ValidatorPool deployed at:", validatorPoolAddress);
+
+  // 9. Deploy Testament Manager
+  const TestatmentManager = await hre.ethers.getContractFactory("TestamentManager");
+  const testamentManager = await TestatmentManager.deploy(validatorPoolAddress, tokenAAddress);
+  await testamentManager.waitForDeployment();
+  const testamentManagerAddress = await testamentManager.getAddress();
+  console.log("✅ TestamentManager deployed at:", testamentManagerAddress);
+
+
 }
 
 main().catch((error) => {
