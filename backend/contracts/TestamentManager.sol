@@ -1,24 +1,84 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract TestamentManager {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "./ValidatorPool.sol";
+
+contract TestamentManager is ERC721, Ownable {
 
     // stateVariable
-    enum Status {Pending, Rejected, Granted}
-    struct DepositInfo {string cid; string decryptionKey; uint depositTimetstamp; Status status;}
-    mapping (address => DepositInfo) private deposits;
+    enum Status {Pending, Rejected, Approved}
+    struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Status status;}
+    mapping (address => TestamentInfo) private lastTestament;
+    mapping (address => TestamentInfo[]) private testaments;
+    
+    // events 
     event TestamentDeposited(address indexed _depositor, string _cid);
+    event TestamentApproved(address indexed _testator, string _cid);
+    event TestamentRejected(address indexed _testator, string _cid);
+
+
+    // custom errors 
+    error HasNotEnoughToken();
+    error TestamentAlreadyExists();
+
+
+    ValidatorPool public validatorPool;
+    IERC20 public paymentToken;  
+
+    constructor(address _validatorPool, address _paymentToken)
+        ERC721("Soulbound Testament", "SBT")
+        Ownable (msg.sender)
+    {
+        validatorPool = ValidatorPool(_validatorPool);
+        paymentToken = IERC20(_paymentToken);
+    }
+
+    // Modifier pour les fonctions nécessitant un paiement
+    modifier requiresPayment(uint256 _amount) {
+        require(
+            paymentToken.balanceOf(msg.sender) - _amount > 0,
+            HasNotEnoughToken()
+        );
+        _;
+    }
+
 
     // deposit testament 
-    function depositTestament(string calldata _cid, string calldata _decryptionKey) external {
-        deposits[msg.sender] = DepositInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+    function depositTestament(string calldata _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
+        require(lastTestament[msg.sender].depositTimestamp == 0, "Testament already exists");
+        paymentToken.transferFrom(msg.sender, address(this), _amount);
+        lastTestament[msg.sender] = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
         emit TestamentDeposited(msg.sender, _cid);
     }
 
-    // getter pour checker les déposit 
-    function getDepositInfo() external view returns(DepositInfo memory) {
-       return deposits[msg.sender];
+    // check testament -> intervention des validateurs 
+    function approveTestament(address _testator, bool _approved) external {
+        require(validatorPool.isAuthorized(msg.sender), "Not authorized notary");
+        require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
+        require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
+
+        if (_approved) {
+            lastTestament[_testator].status = Status.Approved;
+            _mintSBT(_testator, lastTestament[_testator].cid);
+            emit TestamentApproved(_testator, lastTestament[_testator].cid);
+        } else {
+            lastTestament[_testator].status = Status.Rejected;
+            emit TestamentRejected(_testator, lastTestament[_testator].cid);
+        }
+    }
+
+    // Interna function to mint the SBT
+    function _mintSBT(address _to, string memory _cid) internal {
+        uint256 newTokenId = testaments[msg.sender].length + 1;
+        _safeMint(_to, newTokenId);
+    }
+
+    // Getter pour obtenir les informations d’un testament
+    function getTestament(address _testator) external view returns (TestamentInfo memory) {
+        return lastTestament[_testator];
     }
 
 }
