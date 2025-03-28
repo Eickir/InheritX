@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { parseUnits } from "viem";
 import { XCircle, Loader2, CheckCircle, PartyPopper } from "lucide-react";
 import CryptoJS from "crypto-js";
+import { FileText, Lock, Calendar, Info } from "lucide-react";
 import {
   useAccount,
   useWriteContract,
@@ -21,9 +21,13 @@ import {
   musdtAddress,
   musdtABI,
 } from "@/constants";
+import { parseAbiItem } from "viem";
+import { publicClient } from "@/utils/client";
+import { parseUnits, formatUnits } from "viem";
 
 const depositAmount = "100"; // 100 INHX
 
+// Fonction utilitaire pour déterminer le statut de la transaction
 function getTransactionStatus({ isWriteError, isPending, isError, isSuccess }) {
   if (isWriteError) {
     return {
@@ -80,10 +84,10 @@ function StatusAlert({ status }) {
   );
 }
 
-export default function Home() {
-  
+export default function DashboardTestament({ getEvents }) {
   const { address, isConnected } = useAccount();
 
+  // Récupération des soldes et informations du testament via les hooks Wagmi
   const { data: balanceINHX } = useReadContract({
     address: inhxAddress,
     abi: inhxABI,
@@ -108,7 +112,7 @@ export default function Home() {
     account: address,
   });
 
-  // Hook pour la transaction de dépôt sur le smart contract
+  // Hooks pour la transaction de dépôt sur le smart contract
   const {
     data: writeData,
     error: writeError,
@@ -124,7 +128,7 @@ export default function Home() {
     isError,
   } = useWaitForTransactionReceipt({ hash: writeData });
 
-  // Hooks pour l'approbation
+  // Hooks pour l'approbation du transfert de tokens
   const {
     data: approveData,
     error: approveError,
@@ -139,7 +143,7 @@ export default function Home() {
     isError: isApproveTxError,
   } = useWaitForTransactionReceipt({ hash: approveData });
 
-  // États locaux
+  // États locaux pour la gestion des fichiers et du processus
   const [file, setFile] = useState(null);
   const [cid, setCid] = useState("");
   const [decryptedFile, setDecryptedFile] = useState(null);
@@ -180,7 +184,7 @@ export default function Home() {
       const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
       setDecryptedFile(null);
       if (decryptedData.startsWith("data:image/")) {
-        setDecryptedFile(<img src={decryptedData} alt="Decrypted" />);
+        setDecryptedFile(<img src={decryptedData} alt="Déchiffré" />);
       } else if (decryptedData.startsWith("data:application/pdf")) {
         setDecryptedFile(
           <iframe
@@ -198,9 +202,6 @@ export default function Home() {
       alert("Clé incorrecte ou fichier corrompu.");
     }
   };
-
-  // Log global pour suivre approveData et isApproveTxSuccess
-  console.log("Rendu du composant:", { approveData, isApproveTxSuccess, cid, encryptionKey });
 
   // Processus global pour déposer le testament
   const handleDepositTestament = async () => {
@@ -251,7 +252,7 @@ export default function Home() {
         args: [testamentManagerAddress, parseUnits(depositAmount, 18)],
         account: address,
       });
-      // Le dépôt sur le smart contract sera déclenché dans le useEffect ci-dessous
+      // Le dépôt sur le smart contract sera déclenché dans le useEffect suivant
     } catch (err) {
       console.error("Erreur globale dans le processus:", err);
       alert("Échec lors du chiffrement ou du dépôt sur IPFS.");
@@ -261,14 +262,7 @@ export default function Home() {
 
   // useEffect pour déclencher le dépôt une fois l'approbation confirmée
   useEffect(() => {
-    console.log("useEffect approval déclenché", {
-      approveData,
-      isApproveTxSuccess,
-      cid,
-      encryptionKey,
-    });
     if (approveData && isApproveTxSuccess) {
-      console.log("Approval confirmé, lancement de depositTestament", { cid, encryptionKey });
       setProgress((p) => ({ ...p, approvalDone: true, contractStarted: true }));
       writeContract({
         address: testamentManagerAddress,
@@ -317,110 +311,184 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (isSuccess) {
+      getEvents();
+    }
+  }, [isSuccess, getEvents]);
+
   return (
     <>
-      <div>
-      Testament CID: {TestamentInfo?.cid}<br />
-      Clé de déchiffrement: {TestamentInfo?.decryptionKey}<br />
-      Déposé le: {new Date(Number(TestamentInfo?.depositTimestamp) * 1000).toLocaleString()}<br />
-      Statut: {TestamentInfo?.status.toString()}
-      </div>
-      <div>Balance MUSDT: {balanceMUSDT}</div>
-      <div>Balance INHX: {balanceINHX}</div>
-      <div className="flex flex-col items-center p-6 gap-6">
-        <Card className="w-full max-w-md">
-          <CardContent className="space-y-4">
-            <h2 className="text-xl font-bold">
-              Uploader un fichier sur IPFS et déposer son Testament
-            </h2>
-            <Input type="file" onChange={handleChangeFile} />
-            <Button onClick={handleDepositTestament} disabled={!file || uploading || !isConnected}>
-              {uploading
-                ? "Envoi en cours..."
-                : `Déposer ce Testament pour ${depositAmount} INHX`}
-            </Button>
-            {showSteps && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">
-                  Étapes du processus :
-                </h3>
-                <ul className="space-y-2">
-                  <li className="flex items-center">
-                    {progress.encryptionStarted ? (
-                      progress.encryptionDone ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
-                      )
-                    ) : null}
-                    <span>Chiffrement du fichier</span>
-                  </li>
-                  <li className="flex items-center">
-                    {progress.ipfsStarted ? (
-                      progress.ipfsDone ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
-                      )
-                    ) : null}
-                    <span>Dépôt sur IPFS</span>
-                  </li>
-                  <li className="flex items-center">
-                    {progress.approvalStarted ? (
-                      isApproveTxSuccess ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : isApproveLoading || isApprovePending ? (
-                        <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
-                      ) : isApproveError ? (
-                        <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                      ) : null
-                    ) : null}
-                    <span>Approbation du transfert de tokens</span>
-                  </li>
-                  <li className="flex items-center">
-                    {progress.contractStarted ? (
-                      contractHasError ? (
-                        <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                      ) : progress.contractDone ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
-                      )
-                    ) : null}
-                    <span>Dépôt sur le smart contract</span>
-                  </li>
-                </ul>
-                {writeData && (
-                  <div className="mt-4 p-3 border rounded-md bg-gray-100 text-sm break-all">
-                    <strong>Hash de la transaction :</strong>
-                    <p className="text-blue-600">{writeData}</p>
+      <Head>
+        <title>Dashboard Testament - Web3</title>
+        <meta
+          name="description"
+          content="Tableau de bord pour gérer et déposer votre testament sur la blockchain Web3"
+        />
+      </Head>
+      <main className="min-h-screen bg-gray-50 p-6">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-center">
+            Tableau de Bord du Testateur
+          </h1>
+        </header>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Colonne de gauche : Informations & Soldes */}
+          <section>
+            <Card className="mb-6">
+              <CardContent>
+                <div className="flex items-center mb-4">
+                  <FileText className="w-10 h-10 text-blue-600 mr-3" />
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Dernier Testament
+                  </h2>
+                </div>
+                <p className="text-gray-700 text-sm mb-2">
+                  <strong>Testament CID :</strong>{" "}
+                  <span className="break-all">{TestamentInfo?.cid}</span>
+                </p>
+                <p className="text-gray-700 text-sm mb-2">
+                  <strong>Clé de déchiffrement :</strong>{" "}
+                  <span className="break-all">{TestamentInfo?.decryptionKey}</span>
+                </p>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 mr-1" />
+                    <span>
+                      <strong>Déposé le :</strong>{" "}
+                      {new Date(Number(TestamentInfo?.depositTimestamp) * 1000).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Info className="w-5 h-5 mr-1" />
+                    <span>
+                      <strong>Statut :</strong> {TestamentInfo?.status}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <h2 className="text-xl font-bold mb-2">Mes Soldes</h2>
+                <p className="text-gray-700">
+                  Balance MUSDT:{" "}
+                  {balanceMUSDT ? formatUnits(balanceMUSDT, 18) : "Chargement..."}
+                </p>
+                <p className="text-gray-700">
+                  Balance INHX:{" "}
+                  {balanceINHX ? formatUnits(balanceINHX, 18) : "Chargement..."}
+                </p>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Colonne de droite : Dépôt et récupération du testament */}
+          <section>
+            <Card className="mb-6">
+              <CardContent>
+                <h2 className="text-xl font-bold mb-4">
+                  Déposer un Testament
+                </h2>
+                <Input type="file" onChange={handleChangeFile} className="mb-4" />
+                <Button
+                  onClick={handleDepositTestament}
+                  disabled={!file || uploading || !isConnected}
+                >
+                  {uploading
+                    ? "Envoi en cours..."
+                    : `Déposer ce Testament pour ${depositAmount} INHX`}
+                </Button>
+                {showSteps && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold mb-2">
+                      Étapes du processus :
+                    </h3>
+                    <ul className="space-y-2">
+                      <li className="flex items-center">
+                        {progress.encryptionStarted ? (
+                          progress.encryptionDone ? (
+                            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                          ) : (
+                            <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
+                          )
+                        ) : null}
+                        <span>Chiffrement du fichier</span>
+                      </li>
+                      <li className="flex items-center">
+                        {progress.ipfsStarted ? (
+                          progress.ipfsDone ? (
+                            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                          ) : (
+                            <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
+                          )
+                        ) : null}
+                        <span>Dépôt sur IPFS</span>
+                      </li>
+                      <li className="flex items-center">
+                        {progress.approvalStarted ? (
+                          isApproveTxSuccess ? (
+                            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                          ) : isApproveLoading || isApprovePending ? (
+                            <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
+                          ) : isApproveError ? (
+                            <XCircle className="w-5 h-5 text-red-500 mr-2" />
+                          ) : null
+                        ) : null}
+                        <span>Approbation du transfert de tokens</span>
+                      </li>
+                      <li className="flex items-center">
+                        {progress.contractStarted ? (
+                          contractHasError ? (
+                            <XCircle className="w-5 h-5 text-red-500 mr-2" />
+                          ) : progress.contractDone ? (
+                            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                          ) : (
+                            <Loader2 className="w-5 h-5 text-gray-400 mr-2 animate-spin" />
+                          )
+                        ) : null}
+                        <span>Dépôt sur le smart contract</span>
+                      </li>
+                    </ul>
+                    {writeData && (
+                      <div className="mt-4 p-3 border rounded-md bg-gray-100 text-sm break-all">
+                        <strong>Hash de la transaction :</strong>
+                        <p className="text-blue-600">{writeData}</p>
+                      </div>
+                    )}
+                    <StatusAlert status={status} />
                   </div>
                 )}
-                <StatusAlert status={status} />
-              </div>
+              </CardContent>
+            </Card>
+            {cid && (
+              <Card className="mb-6">
+                <CardContent>
+                  <p className="mb-2">
+                    <strong>Hash IPFS :</strong> {cid}
+                  </p>
+                  <p className="mb-4">
+                    <strong>Clé de déchiffrement :</strong> {encryptionKey}
+                  </p>
+                  <Button onClick={retrieveAndDecryptFile}>
+                    Récupérer et Déchiffrer le fichier
+                  </Button>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
-        {cid && (
-          <div className="w-full max-w-md p-4 border rounded-lg shadow-md">
-            <p>
-              <strong>Hash IPFS :</strong> {cid}
-            </p>
-            <p>
-              <strong>Clé de déchiffrement :</strong> {encryptionKey}
-            </p>
-            <Button onClick={retrieveAndDecryptFile}>
-              Récupérer et Déchiffrer le fichier
-            </Button>
-          </div>
-        )}
-        {decryptedFile && (
-          <div className="w-full max-w-md p-4 border rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-4">Fichier Déchiffré :</h3>
-            {decryptedFile}
-          </div>
-        )}
-      </div>
+            {decryptedFile && (
+              <Card>
+                <CardContent>
+                  <h3 className="text-xl font-bold mb-4">
+                    Fichier Déchiffré :
+                  </h3>
+                  {decryptedFile}
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        </div>
+      </main>
     </>
   );
 }

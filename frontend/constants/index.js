@@ -888,6 +888,37 @@ export const poolABI=[
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_tokenSent",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_tokenReceived",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_balanceBeforeTokenReceived",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_balanceAfterTokenReceived",
+        "type": "uint256"
+      }
+    ],
+    "name": "TokenSwapped",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1058,7 +1089,7 @@ export const poolABI=[
     "stateMutability": "nonpayable",
     "type": "function"
   }
-]
+];
 
 
 // InheritX Protocol
