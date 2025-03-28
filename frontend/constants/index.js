@@ -1063,7 +1063,7 @@ export const poolABI=[
 
 // InheritX Protocol
 // TestamentManager 
-export const testamentManagerAddress="0x26320DE63415e5AAf2BA617D97C39444eDb6F741";
+export const testamentManagerAddress="0x2ac430E52F47420A00984E11Ef0DDba80652419a";
 export const testamentManagerABI=[
   {
     "inputs": [
