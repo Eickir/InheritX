@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
   
-  const [deployer] = await hre.ethers.getSigners();
+  const [deployer, user1, user2] = await hre.ethers.getSigners();
   console.log("🚀 Deployer:", deployer.address);
 
   const overrides = {
@@ -38,6 +38,14 @@ async function main() {
   await tokenA.transfer(poolAddress, LIQUIDITY_AMOUNT, overrides);
   await tokenB.transfer(poolAddress, LIQUIDITY_AMOUNT, overrides);
   console.log("📦 Tokens transferred to LP");
+
+  console.log(`Transferring 1000 tokens to ${user1.address}...`);
+  const transferAmount = hre.ethers.parseUnits("1000", 18)
+  const tx = await tokenB.transfer(user1.address, transferAmount);
+  await tx.wait();
+  const user1Balance = await tokenB.connect(user1).balanceOf(user1.address);
+  console.log("🧾 Deployer MUSDT balance:", hre.ethers.formatUnits(user1Balance, 18));
+
 
   // 5️⃣ Approve router from inside LP contract
   try {

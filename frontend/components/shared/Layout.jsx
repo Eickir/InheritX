@@ -1,12 +1,14 @@
-import Footer from "./Footer"
-import Header from "./Header"
+import Footer from "./Footer";
+import Header from "./Header";
 
-export const Layout = ({children}) => {
+export const Layout = ({ children }) => {
   return (
-    <>
-    <Header/>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow">
         {children}
-    <Footer/>
-    </>
-  )
-}
+      </main>
+      <Footer />
+    </div>
+  );
+};

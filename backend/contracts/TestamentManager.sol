@@ -2,17 +2,21 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol"; 
 import "./ValidatorPool.sol";
 
-contract TestamentManager is ERC721, Ownable {
+contract TestamentManager is ERC721URIStorage, Ownable {
 
     // stateVariable
     enum Status {Pending, Rejected, Approved}
+    uint256 private _tokenIdCounter;
     struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Status status;}
     mapping (address => TestamentInfo) private lastTestament;
     mapping (address => TestamentInfo[]) private testaments;
+    mapping(uint256 => string) private encryptedKeys;
+    
+
     
     // events 
     event TestamentDeposited(address indexed _depositor, string _cid);
@@ -39,16 +43,15 @@ contract TestamentManager is ERC721, Ownable {
     // Modifier pour les fonctions nécessitant un paiement
     modifier requiresPayment(uint256 _amount) {
         require(
-            paymentToken.balanceOf(msg.sender) - _amount > 0,
+            paymentToken.balanceOf(msg.sender) >= _amount,
             HasNotEnoughToken()
         );
         _;
     }
 
-
     // deposit testament 
     function depositTestament(string calldata _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
-        require(lastTestament[msg.sender].depositTimestamp == 0, "Testament already exists");
+        require(lastTestament[msg.sender].depositTimestamp == 0, TestamentAlreadyExists());
         paymentToken.transferFrom(msg.sender, address(this), _amount);
         lastTestament[msg.sender] = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
         emit TestamentDeposited(msg.sender, _cid);
@@ -62,7 +65,7 @@ contract TestamentManager is ERC721, Ownable {
 
         if (_approved) {
             lastTestament[_testator].status = Status.Approved;
-            _mintSBT(_testator, lastTestament[_testator].cid);
+            mintTestament(_testator, lastTestament[_testator].cid, lastTestament[_testator].decryptionKey);
             emit TestamentApproved(_testator, lastTestament[_testator].cid);
         } else {
             lastTestament[_testator].status = Status.Rejected;
@@ -70,10 +73,13 @@ contract TestamentManager is ERC721, Ownable {
         }
     }
 
-    // Interna function to mint the SBT
-    function _mintSBT(address _to, string memory _cid) internal {
-        uint256 newTokenId = testaments[msg.sender].length + 1;
-        _safeMint(_to, newTokenId);
+    function mintTestament(address to, string memory _cid, string memory _decryptionKey) internal onlyOwner {
+        
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, _cid);
+        encryptedKeys[tokenId] = _decryptionKey; // <- Association ici
     }
 
     // Getter pour obtenir les informations d’un testament

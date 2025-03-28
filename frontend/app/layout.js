@@ -20,8 +20,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className="min-h-screen">
+      <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen`}>
         <RainbowKitAndWagmiProvider>
           <Layout>
             {children}
@@ -31,3 +31,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
