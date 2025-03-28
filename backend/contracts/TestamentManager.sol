@@ -50,8 +50,8 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     }
 
     // deposit testament 
-    function depositTestament(string calldata _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
-        require(lastTestament[msg.sender].depositTimestamp == 0, TestamentAlreadyExists());
+    function depositTestament(string memory _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
+        require(keccak256(bytes(lastTestament[msg.sender].cid)) != keccak256(bytes(_cid)), TestamentAlreadyExists());
         paymentToken.transferFrom(msg.sender, address(this), _amount);
         lastTestament[msg.sender] = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
         emit TestamentDeposited(msg.sender, _cid);

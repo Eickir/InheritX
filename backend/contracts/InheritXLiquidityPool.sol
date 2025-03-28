@@ -7,6 +7,11 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
+interface IERC20Metadata is IERC20 {
+    function symbol() external view returns (string memory);
+    function balanceOf() external view returns (uint256);
+}
+
 contract InheritXLiquidityPool is Ownable {
 
     // add addresses of the two tokens used for the liquidity pool + router from UniswapV2
@@ -27,6 +32,9 @@ contract InheritXLiquidityPool is Ownable {
         tokenB = _tokenB;
         router = IUniswapV2Router02(_router);
     }
+
+    // events 
+    event TokenSwapped(string _tokenSent, string _tokenReceived, uint256 _balanceBeforeTokenReceived, uint256 _balanceAfterTokenReceived);
 
     function approveRouter() external onlyOwner {
         _safeApprove(tokenA, address(router));
@@ -77,6 +85,9 @@ contract InheritXLiquidityPool is Ownable {
         uint amountOutMin,
         uint deadline
     ) external {
+        
+        uint256 balanceBefore = IERC20Metadata(tokenB).balanceOf(msg.sender);
+
         // Transférer TokenA de l'utilisateur vers ce contrat
         require(
             IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn),
@@ -102,6 +113,10 @@ contract InheritXLiquidityPool is Ownable {
             msg.sender, // Les tokens reçus seront directement envoyés à l'utilisateur
             deadline
         );
+
+        uint256 balanceAfter = IERC20Metadata(tokenB).balanceOf(msg.sender);
+
+        emit TokenSwapped(IERC20Metadata(tokenA).symbol(),IERC20Metadata(tokenB).symbol(), balanceBefore, balanceAfter);
     }
 
     /**
@@ -115,6 +130,9 @@ contract InheritXLiquidityPool is Ownable {
         uint amountOutMin,
         uint deadline
     ) external {
+
+        uint256 balanceBefore = IERC20Metadata(tokenA).balanceOf(msg.sender);
+
         // Transférer TokenB de l'utilisateur vers ce contrat
         require(
             IERC20(tokenB).transferFrom(msg.sender, address(this), amountIn),
@@ -140,6 +158,11 @@ contract InheritXLiquidityPool is Ownable {
             msg.sender, // Les tokens reçus seront directement envoyés à l'utilisateur
             deadline
         );
+
+        uint256 balanceAfter = IERC20Metadata(tokenA).balanceOf(msg.sender);
+
+        emit TokenSwapped(IERC20Metadata(tokenB).symbol(),IERC20Metadata(tokenA).symbol(), balanceBefore,balanceAfter);
+
     }
 
         function getReserves() external view returns (uint112 reserveA, uint112 reserveB) {
