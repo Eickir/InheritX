@@ -51,9 +51,10 @@ contract TestamentManager is ERC721URIStorage, Ownable {
 
     // deposit testament 
     function depositTestament(string memory _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
-        require(keccak256(bytes(lastTestament[msg.sender].cid)) != keccak256(bytes(_cid)), TestamentAlreadyExists());
         paymentToken.transferFrom(msg.sender, address(this), _amount);
-        lastTestament[msg.sender] = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+        TestamentInfo memory _myTestament = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+        lastTestament[msg.sender] = _myTestament;
+        testaments[msg.sender].push(_myTestament);
         emit TestamentDeposited(msg.sender, _cid);
     }
 
@@ -85,6 +86,10 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     // Getter pour obtenir les informations d’un testament
     function getTestament(address _testator) external view returns (TestamentInfo memory) {
         return lastTestament[_testator];
+    }
+
+    function getTestamentsNumber(address _testator) external view returns(uint256) {
+        return testaments[_testator].length; 
     }
 
 }
