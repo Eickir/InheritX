@@ -1572,6 +1572,25 @@ export const testamentManagerABI=[
     "inputs": [
       {
         "internalType": "address",
+        "name": "_testator",
+        "type": "address"
+      }
+    ],
+    "name": "getTestamentsNumber",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "owner",
         "type": "address"
       },
