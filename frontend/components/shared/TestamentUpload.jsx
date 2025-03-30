@@ -191,6 +191,7 @@ export default function DashboardTestament({my_events}) {
     0: "Pending",
     1: "Accepted",
     2: "Rejected",
+    3: "Outdated"
   };
 
   // Variable pour le nombre de testaments déposés
