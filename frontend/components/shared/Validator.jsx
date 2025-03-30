@@ -13,7 +13,7 @@ import {
   inhxAddress,
   inhxABI,
 } from "@/constants";
-import { useWriteContract, useReadContract } from "wagmi";
+import { useWriteContract, useReadContract, useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { parseAbiItem, parseUnits, formatUnits } from "viem";
 import { publicClient } from "@/utils/client";
 
@@ -26,13 +26,23 @@ export default function ValidatorDashboard() {
   const [decryptedContent, setDecryptedContent] = useState(null);
   const [stakeInput, setStakeInput] = useState("");
 
+  const { address, isConnected } = useAccount();
   const { writeContract } = useWriteContract();
 
   const { data: userStake } = useReadContract({
     address: validatorPoolAddress,
     abi: validatorPoolABI,
     functionName: "stakes",
-    args: [publicClient.account?.address],
+    args: [address],
+    watch: true,
+  });
+
+  const { data: isAuthorized } = useReadContract({
+    address: validatorPoolAddress,
+    abi: validatorPoolABI,
+    functionName: "isAuthorized",
+    args: [address],
+    account: address,
     watch: true,
   });
 
@@ -62,8 +72,8 @@ export default function ValidatorDashboard() {
         }),
       ]);
 
-      const approvedCIDs = new Set(approvals.map(log => log.args._cid));
-      const rejectedCIDs = new Set(rejections.map(log => log.args._cid));
+      const approvedCIDs = new Set(approvals.map((log) => log.args._cid));
+      const rejectedCIDs = new Set(rejections.map((log) => log.args._cid));
 
       const latestByDepositor = new Map();
 
@@ -77,8 +87,9 @@ export default function ValidatorDashboard() {
         }
       }
 
-      const pending = Array.from(latestByDepositor.values())
-        .filter(t => !approvedCIDs.has(t.cid) && !rejectedCIDs.has(t.cid));
+      const pending = Array.from(latestByDepositor.values()).filter(
+        (t) => !approvedCIDs.has(t.cid) && !rejectedCIDs.has(t.cid)
+      );
 
       setPendingTestaments(pending);
       setCheckedCount(approvedCIDs.size + rejectedCIDs.size);
@@ -108,6 +119,22 @@ export default function ValidatorDashboard() {
     }
   };
 
+    // Approbation du transfert de tokens
+    const {
+      data: approveData,
+      error: approveError,
+      isError: isApproveError,
+      isLoading: isApproveLoading,
+      writeContract: writeApprove,
+    } = useWriteContract();
+    const {
+      isPending: isApprovePending,
+      isSuccess: isApproveTxSuccess,
+      isError: isApproveTxError,
+    } = useWaitForTransactionReceipt({
+      hash: approveData,
+    });
+
   const handleDecision = (cid, approve) => {
     writeContract({
       address: testamentManagerAddress,
@@ -121,14 +148,33 @@ export default function ValidatorDashboard() {
   };
 
   const handleStake = () => {
-    writeContract({
-      address: validatorPoolAddress,
-      abi: validatorPoolABI,
-      functionName: "stake",
-      args: [parseUnits(stakeInput, 18)],
-    });
-    setStakeInput("");
-  };
+
+    writeApprove({
+          address: inhxAddress,
+          abi: inhxABI,
+          functionName: "approve",
+          args: [validatorPoolAddress, parseUnits(stakedAmount, 18)],
+          account: address,
+        });
+        
+      }  
+
+  // Déclenchement du dépôt après approbation
+  useEffect(() => {
+    if (approveData && isApproveTxSuccess) {
+
+
+
+      writeContract({
+        address: validatorPoolAddress,
+        abi: validatorPoolABI,
+        functionName: "stake",
+        args: [parseUnits(stakeInput, 18)],
+      });
+      setStakeInput("");
+    };
+  }, [approveData, isApproveTxSuccess, address, writeContract]);
+
 
   const handleWithdraw = () => {
     writeContract({
@@ -142,76 +188,89 @@ export default function ValidatorDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <h1 className="text-2xl font-bold mb-6">Tableau de bord du Validateur</h1>
+      <div>{isAuthorized?.toString()}</div>
+      {!isAuthorized ? (
+        <section className="bg-white rounded-lg shadow p-4 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Rejoindre le réseau</h2>
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <Input
+              placeholder="Montant à staker"
+              value={stakeInput}
+              onChange={(e) => setStakeInput(e.target.value)}
+              className="w-full md:w-1/3"
+            />
+            <Button onClick={handleStake} disabled={!stakeInput}>Stake</Button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardContent className="flex flex-col items-center">
+                <span className="text-sm text-gray-600">Testaments en attente</span>
+                <span className="text-2xl font-bold">{pendingTestaments.length}</span>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-col items-center">
+                <span className="text-sm text-gray-600">Testaments checkés</span>
+                <span className="text-2xl font-bold">{checkedCount}</span>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-col items-center">
+                <span className="text-sm text-gray-600">% refusés</span>
+                <span className="text-2xl font-bold">{rejectedRatio}</span>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-col items-center">
+                <span className="text-sm text-gray-600">Jetons stakés</span>
+                <span className="text-2xl font-bold">{stakedAmount} INHX</span>
+              </CardContent>
+            </Card>
+          </section>
 
-      {/* Metrics */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="flex flex-col items-center">
-            <span className="text-sm text-gray-600">Testaments en attente</span>
-            <span className="text-2xl font-bold">{pendingTestaments.length}</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center">
-            <span className="text-sm text-gray-600">Testaments checkés</span>
-            <span className="text-2xl font-bold">{checkedCount}</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center">
-            <span className="text-sm text-gray-600">% refusés</span>
-            <span className="text-2xl font-bold">{rejectedRatio}</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col items-center">
-            <span className="text-sm text-gray-600">Jetons stakés</span>
-            <span className="text-2xl font-bold">{stakedAmount} INHX</span>
-          </CardContent>
-        </Card>
-      </section>
+          <section className="bg-white rounded-lg shadow p-4 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Staking</h2>
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <Input
+                placeholder="Montant à staker"
+                value={stakeInput}
+                onChange={(e) => setStakeInput(e.target.value)}
+                className="w-full md:w-1/3"
+              />
+              <Button onClick={handleStake} disabled={!stakeInput}>Stake</Button>
+              <Button variant="destructive" onClick={handleWithdraw}>Withdraw</Button>
+            </div>
+          </section>
 
-      {/* Staking section */}
-      <section className="bg-white rounded-lg shadow p-4 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Staking</h2>
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <Input
-            placeholder="Montant à staker"
-            value={stakeInput}
-            onChange={(e) => setStakeInput(e.target.value)}
-            className="w-full md:w-1/3"
-          />
-          <Button onClick={handleStake}>Stake</Button>
-          <Button variant="destructive" onClick={handleWithdraw}>Withdraw</Button>
-        </div>
-      </section>
+          <section className="bg-white rounded-lg shadow p-4">
+            <h2 className="text-xl font-semibold mb-4">Testaments en attente</h2>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Adresse</th>
+                  <th className="py-2">CID</th>
+                  <th className="py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingTestaments.map((t) => (
+                  <tr key={`${t.cid}-${t.blockNumber}`} className="border-b">
+                    <td className="py-2 break-all">{t.depositor}</td>
+                    <td className="py-2 break-all">{t.cid}</td>
+                    <td className="py-2 text-right">
+                      <Button onClick={() => decryptCID(t.cid)}>Déchiffrer</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        </>
+      )}
 
-      {/* Table of pending testaments */}
-      <section className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-xl font-semibold mb-4">Testaments en attente</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="py-2">Adresse</th>
-              <th className="py-2">CID</th>
-              <th className="py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingTestaments.map((t) => (
-              <tr key={`${t.cid}-${t.blockNumber}`} className="border-b">
-                <td className="py-2 break-all">{t.depositor}</td>
-                <td className="py-2 break-all">{t.cid}</td>
-                <td className="py-2 text-right">
-                  <Button onClick={() => decryptCID(t.cid)}>Déchiffrer</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      {/* Decrypted modal */}
       {selectedCID && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white w-full max-w-xl p-6 rounded-lg shadow-lg">
