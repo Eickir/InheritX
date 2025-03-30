@@ -150,21 +150,18 @@ export default function ValidatorDashboard() {
   const handleStake = () => {
 
     writeApprove({
-          address: inhxAddress,
-          abi: inhxABI,
-          functionName: "approve",
-          args: [validatorPoolAddress, parseUnits(stakedAmount, 18)],
-          account: address,
-        });
+      address: inhxAddress,
+      abi: inhxABI,
+      functionName: "approve",
+      args: [validatorPoolAddress, parseUnits(stakeInput, 18)],
+      account: address,
+    });
         
       }  
 
   // Déclenchement du dépôt après approbation
   useEffect(() => {
     if (approveData && isApproveTxSuccess) {
-
-
-
       writeContract({
         address: validatorPoolAddress,
         abi: validatorPoolABI,

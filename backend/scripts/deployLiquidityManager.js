@@ -85,7 +85,7 @@ async function main() {
 
   // 8. Deploy ValidatorPool
   const ValidatorPool = await hre.ethers.getContractFactory("ValidatorPool");
-  const validatorPool = await ValidatorPool.deploy(tokenAAddress, 5_000);
+  const validatorPool = await ValidatorPool.deploy(tokenAAddress, 100);
   await validatorPool.waitForDeployment();
   const validatorPoolAddress = await validatorPool.getAddress();
   console.log("✅ ValidatorPool deployed at:", validatorPoolAddress);

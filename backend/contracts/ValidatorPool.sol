@@ -32,7 +32,7 @@ contract ValidatorPool is Ownable {
 
     // Déposer des tokens pour rejoindre le réseau
     function stake(uint256 _amount) external {
-        require(isValidator[msg.sender] = false, ValidatorAlreadyInPool());
+        require(isValidator[msg.sender] == false, ValidatorAlreadyInPool());
         require(_amount >= minStakeAmount, DepositBelowMinimumRequired());
 
         stakingToken.transferFrom(msg.sender, address(this), _amount);
