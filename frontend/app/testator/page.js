@@ -1,22 +1,7 @@
 "use client";
-import Head from "next/head";
-import Files from "@/components/shared/Files";
-import {
-    testamentManagerABI,
-    testamentManagerAddress,
-    inhxAddress,
-    inhxABI,
-    musdtAddress,
-    musdtABI,
-    poolAddress, 
-    poolABI
-  } from "@/constants";
-import { parseAbiItem } from 'viem'
-import { publicClient } from '@/utils/client'
-import TestamentUploader from "@/components/shared/TestamentUpload";
-import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import NotConnected from "@/components/shared/NotConnected";
+import DashboardTestament from "@/components/shared/testator_dashboard/DashboardTestament";
 
 export default function Testator() {
 
@@ -25,7 +10,7 @@ export default function Testator() {
     return (
 
     <>
-    {isConnected ? <TestamentUploader /> : <NotConnected />}
+    {isConnected ? <DashboardTestament /> : <NotConnected />}
     </>
 
     )
