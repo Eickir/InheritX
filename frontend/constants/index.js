@@ -1094,7 +1094,7 @@ export const poolABI=[
 
 // InheritX Protocol
 // Validator Pool
-export const validatorPoolAddress="0x26320DE63415e5AAf2BA617D97C39444eDb6F741";
+export const validatorPoolAddress="0x335796f7A0F72368D1588839e38f163d90C92C80";
 export const validatorPoolABI=[
   {
     "inputs": [
@@ -1388,7 +1388,13 @@ export const validatorPoolABI=[
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
     "name": "withdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1396,7 +1402,7 @@ export const validatorPoolABI=[
   }
 ];
 // TestamentManager 
-export const testamentManagerAddress="0x2ac430E52F47420A00984E11Ef0DDba80652419a";
+export const testamentManagerAddress="0xa86582Ad5E80abc19F95f8A9Fb3905Cda0dAbd59";
 export const testamentManagerABI=[
   {
     "inputs": [
@@ -1754,13 +1760,13 @@ export const testamentManagerABI=[
     "inputs": [
       {
         "internalType": "address",
-        "name": "_testator",
+        "name": "_validator",
         "type": "address"
       },
       {
-        "internalType": "bool",
-        "name": "_approved",
-        "type": "bool"
+        "internalType": "address",
+        "name": "_testator",
+        "type": "address"
       }
     ],
     "name": "approveTestament",
@@ -1831,6 +1837,11 @@ export const testamentManagerABI=[
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "_validator",
+        "type": "address"
+      },
       {
         "internalType": "string",
         "name": "_cid",
@@ -1994,13 +2005,13 @@ export const testamentManagerABI=[
     "inputs": [
       {
         "internalType": "address",
-        "name": "_testator",
+        "name": "_validator",
         "type": "address"
       },
       {
-        "internalType": "bool",
-        "name": "_rejected",
-        "type": "bool"
+        "internalType": "address",
+        "name": "_testator",
+        "type": "address"
       }
     ],
     "name": "rejectTestament",

@@ -20,16 +20,25 @@ export default function HomePage() {
           <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto text-gray-700 dark:text-zinc-200 font-sans">
             Créez, chiffrez et ancrez votre testament sur la blockchain. Sûr, infalsifiable.
           </p>
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              className="rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700 text-white transition-transform duration-300 hover:scale-105"
-            >
-            <Link href="/login">
-            Se connecter
+          <div className="flex justify-center gap-4">
+            <Link href="/testator">
+              <Button
+                size="lg"
+                className="rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700 text-white transition-transform duration-300 hover:scale-105"
+              >
+                Espace Testateur
+              </Button>
             </Link>
-            </Button>
-          </div>
+            <Link href="/validator">
+              <Button
+                size="lg"
+                className="rounded-2xl shadow-lg bg-green-600 hover:bg-green-700 text-white transition-transform duration-300 hover:scale-105"
+              >
+                Espace Validateur
+              </Button>
+          </Link>
+        </div>
+
         </div>
       </section>
 

@@ -156,7 +156,6 @@ export default function DashboardTestament({my_events}) {
     functionName: "balanceOf",
     args: [address],
     account: address,
-    watch: true,
   });
 
   const { data: balanceMUSDT, refetch: refetchMUSDTBalance } = useReadContract({
@@ -165,7 +164,6 @@ export default function DashboardTestament({my_events}) {
     functionName: "balanceOf",
     args: [address],
     account: address,
-    watch: true,
   });
   const { data: TestamentInfo , refetch: refetchTestamentInfo} = useReadContract({
     address: testamentManagerAddress,
@@ -173,7 +171,6 @@ export default function DashboardTestament({my_events}) {
     functionName: "getTestament",
     args: [address],
     account: address,
-    watch: true,
   });
 
   const { data: TestamentCount , refetch: refetchTestamentCount} = useReadContract({
@@ -182,24 +179,18 @@ export default function DashboardTestament({my_events}) {
     functionName: "getTestamentsNumber",
     args: [address],
     account: address,
-    watch: true,
   });
 
 
   // Pour traduire le statut numérique du testament
   const statusMapping = {
     0: "Pending",
-    1: "Accepted",
-    2: "Rejected",
+    1: "Rejected",
+    2: "Accepted",
     3: "Outdated"
   };
 
   // Variable pour le nombre de testaments déposés
-  useEffect(() => {
-    if (typeof isConnected === "boolean" && !isConnected) {
-      router.push("/login");
-    }
-  }, [isConnected, router]);
 
   // Transaction de dépôt
   const {
@@ -210,6 +201,8 @@ export default function DashboardTestament({my_events}) {
     isSuccess: isWriteSuccess,
     writeContract,
   } = useWriteContract();
+  
+  
   const { isPending, isSuccess, isError } = useWaitForTransactionReceipt({
     hash: writeData,
   });
@@ -279,6 +272,19 @@ export default function DashboardTestament({my_events}) {
       ),
       fromBlock: 22123608n,
     });
+
+    const TestamentApprovedLogs = await publicClient.getLogs({
+      address: testamentManagerAddress, 
+      event: parseAbiItem('event TestamentApproved(address indexed _depositor, string _cid)'), 
+      fromBlock: 22123608n
+    })        
+
+    const TestamentRejectedLogs = await publicClient.getLogs({
+      address: testamentManagerAddress, 
+      event: parseAbiItem('event TestamentRejected(address indexed _depositor, string _cid)'), 
+      fromBlock: 22123608n
+    })     
+
     const formattedTestamentDepositedLogs = TestamentDepositedLogs.map((log) => ({
       type: "TestamentDeposited",
       _depositor: log.args._depositor,
@@ -294,9 +300,22 @@ export default function DashboardTestament({my_events}) {
       transactionHash: log.transactionHash,
       blockNumber: log.blockNumber.toString(),
     }));
-    const combinedEvents = [
-      ...formattedTestamentDepositedLogs,
-      ...formattedSwapLogs,
+
+    const formattedTestamentApprovedLogs = TestamentApprovedLogs.map((log) => ({
+      type: "TestamentApproved", 
+      _depositor: log.args._depositor,
+      transactionHash: log.transactionHash,
+      blockNumber: log.blockNumber.toString(),
+  })); 
+
+    const formattedTestamentRejectedLogs = TestamentRejectedLogs.map((log) => ({
+      type: "TestamentRejected", 
+      _depositor: log.args._depositor,
+      transactionHash: log.transactionHash,
+      blockNumber: log.blockNumber.toString(),
+  })); 
+
+    const combinedEvents = [...formattedTestamentDepositedLogs,...formattedTestamentRejectedLogs,...formattedTestamentApprovedLogs,...formattedSwapLogs
     ].sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
     setEvents(combinedEvents);
   };
@@ -310,7 +329,7 @@ export default function DashboardTestament({my_events}) {
     refetchMUSDTBalance();
     refetchTestamentInfo();
     refetchTestamentCount();
-  }, [isWriteSuccess]);
+  }, [writeData]);
 
   // Fonctions de chiffrement/déchiffrement
   const generateEncryptionKey = () =>
@@ -406,17 +425,40 @@ export default function DashboardTestament({my_events}) {
 
   // Déclenchement du dépôt après approbation
   useEffect(() => {
-    if (approveData && isApproveTxSuccess) {
-      setProgress((p) => ({ ...p, approvalDone: true, contractStarted: true }));
-      writeContract({
-        address: testamentManagerAddress,
-        abi: testamentManagerABI,
-        functionName: "depositTestament",
-        args: [cid, encryptionKey, parseUnits(depositAmount, 18)],
-        account: address,
-      });
-    }
+    const tryWriteContract = async () => {
+      if (approveData && isApproveTxSuccess) {
+        console.log("✅ Approbation réussie. Tentative de dépôt...");
+        console.log("CID:", cid);
+        console.log("Clé de chiffrement:", encryptionKey);
+  
+        try {
+          setProgress((p) => ({ ...p, approvalDone: true, contractStarted: true }));
+          
+          await writeContract({
+            address: testamentManagerAddress,
+            abi: testamentManagerABI,
+            functionName: "depositTestament",
+            args: [cid, encryptionKey, parseUnits(depositAmount, 18)],
+            account: address,
+          });
+  
+          console.log("🎉 Transaction envoyée !");
+        } catch (err) {
+          console.error("❌ Erreur lors du dépôt :", err);
+          alert("Erreur lors de l'envoi du testament sur le smart contract. Consulte la console.");
+          setUploading(false);
+          setProgress((p) => ({
+            ...p,
+            contractStarted: false,
+            contractDone: false,
+          }));
+        }
+      }
+    };
+  
+    tryWriteContract();
   }, [approveData, isApproveTxSuccess, cid, encryptionKey, address, writeContract]);
+  
 
   // Une fois la transaction confirmée, on arrête le chargement et on rafraîchit les événements
   useEffect(() => {

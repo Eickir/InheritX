@@ -20,6 +20,7 @@ export default function EventLogList({ events }) {
       const term = searchTerm.toLowerCase();
       return (
         (event._depositor && event._depositor.toLowerCase().includes(term)) ||
+        (event.user && event.user.toLowerCase().includes(term)) ||
         (event.transactionHash && event.transactionHash.toLowerCase().includes(term))
       );
     }
@@ -34,15 +35,28 @@ export default function EventLogList({ events }) {
     return Number(b.blockNumber) - Number(a.blockNumber);
   });
 
+  // Mapping des titres d'événements pour l'affichage
+  const eventTitles = {
+    TestamentDeposited: "Testament Deposited",
+    TestamentApproved: "Testament Approved",
+    TestamentRejected: "Testament Rejected",
+    SwapToken: "Swap Token",
+    TokensStaked: "Tokens Staked",
+    TokensWithdrawn: "Tokens Withdrawn",
+    AddedToPool: "Added To Pool",
+    RemovedFromPool: "Removed From Pool",
+    MinStakeUpdated: "Min Stake Updated",
+  };
+
   // Fonction d'export en CSV
   const exportToCSV = () => {
-    const headers = ["Type", "Depositor", "TransactionHash", "Block", "Date"];
+    const headers = ["Type", "Depositor/User", "TransactionHash", "Block", "Date"];
     const csvRows = [headers.join(",")];
 
     sortedEvents.forEach((event) => {
       const row = [
         event.type,
-        event._depositor || "",
+        event._depositor || event.user || "",
         event.transactionHash,
         event.blockNumber,
         event.timestamp
@@ -80,7 +94,7 @@ export default function EventLogList({ events }) {
             <Download className="w-4 h-4" /> Export CSV
           </button>
         </div>
-
+  
         {/* Filtres et champ de recherche */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <div className="flex items-center gap-2">
@@ -92,18 +106,25 @@ export default function EventLogList({ events }) {
             >
               <option value="All">Tous</option>
               <option value="TestamentDeposited">TestamentDeposited</option>
+              <option value="TestamentApproved">TestamentApproved</option>
+              <option value="TestamentRejected">TestamentRejected</option>
               <option value="SwapToken">SwapToken</option>
+              <option value="TokensStaked">TokensStaked</option>
+              <option value="TokensWithdrawn">TokensWithdrawn</option>
+              <option value="AddedToPool">AddedToPool</option>
+              <option value="RemovedFromPool">RemovedFromPool</option>
+              <option value="MinStakeUpdated">MinStakeUpdated</option>
             </select>
           </div>
           <input
             type="text"
-            placeholder="Rechercher par dépositaire ou tx hash..."
+            placeholder="Rechercher par dépositaire, user ou tx hash..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 w-full"
           />
         </div>
-
+  
         {sortedEvents.length > 0 ? (
           // Conteneur scrollable pour les événements
           <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
@@ -116,7 +137,7 @@ export default function EventLogList({ events }) {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-lg font-medium text-blue-600">
-                      {event.type === "TestamentDeposited" ? "Testament Deposited" : "Swap Token"}
+                      {eventTitles[event.type] || event.type}
                     </p>
                     <p className="text-sm text-gray-600">
                       Bloc: {event.blockNumber} - Tx: {event.transactionHash?.slice(0, 10)}...
@@ -132,7 +153,10 @@ export default function EventLogList({ events }) {
                 </div>
                 {expandedEventIndex === index && (
                   <div className="mt-4 text-sm text-gray-700">
-                    {event.type === "TestamentDeposited" && (
+                    {/* Affichage des détails en fonction du type d'événement */}
+                    {(event.type === "TestamentDeposited" ||
+                      event.type === "TestamentApproved" ||
+                      event.type === "TestamentRejected") && (
                       <p>
                         <span className="font-semibold">Depositor:</span> {event._depositor}
                       </p>
@@ -156,6 +180,29 @@ export default function EventLogList({ events }) {
                         </p>
                       </>
                     )}
+  
+                    {/* Nouveaux événements */}
+                    {(event.type === "TokensStaked" || event.type === "TokensWithdrawn") && (
+                      <>
+                        <p>
+                          <span className="font-semibold">Utilisateur:</span> {event.user}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Montant:</span> {event.amount}
+                        </p>
+                      </>
+                    )}
+                    {(event.type === "AddedToPool" || event.type === "RemovedFromPool") && (
+                      <p>
+                        <span className="font-semibold">Utilisateur:</span> {event.user}
+                      </p>
+                    )}
+                    {event.type === "MinStakeUpdated" && (
+                      <p>
+                        <span className="font-semibold">Nouveau stake minimum:</span> {event.newMinStake}
+                      </p>
+                    )}
+  
                     {event.timestamp && (
                       <p>
                         <span className="font-semibold">Date:</span>{" "}

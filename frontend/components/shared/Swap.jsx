@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import {
   poolABI,
@@ -18,17 +18,21 @@ export default function SwapComponent() {
   const [inputAmount, setInputAmount] = useState("0");
   const [isMUSDTToINHX, setIsMUSDTToINHX] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [estimatedAmountOut, setEstimatedAmountOut] = useState("0");
 
   const decimals = 18;
 
-  const { data: balanceMUSDT } = useReadContract({
+  const {data: writeApprove, isError: isWriteApproveError, isLoading: isWriteApproveLoading,isSuccess: isWriteApproveSuccess, writeContract: writeApproveFunction} = useWriteContract();
+  const {data: writeSwap, isError: isWriteError, isLoading: isWriteLoading,isSuccess: isWriteSuccess, writeContract: writeSwapFunction} = useWriteContract();
+
+  const { data: balanceMUSDT, refetch: refetchMUSDTBalance } = useReadContract({
     address: musdtAddress,
     abi: musdtABI,
     functionName: "balanceOf",
     args: [address],
   });
 
-  const { data: balanceINHX } = useReadContract({
+  const { data: balanceINHX, refetch: refetchINHXBalance } = useReadContract({
     address: inhxAddress,
     abi: inhxABI,
     functionName: "balanceOf",
@@ -52,7 +56,7 @@ export default function SwapComponent() {
         : "swapTokenAForTokenB";
 
       // Step 1: Approve LP to spend tokenIn
-      await writeContract({
+      writeApproveFunction({
         address: tokenInAddress,
         abi: isMUSDTToINHX ? musdtABI : inhxABI,
         functionName: "approve",
@@ -61,7 +65,7 @@ export default function SwapComponent() {
       });
 
       // Step 2: Call swap on LP
-      await writeContract({
+      writeSwapFunction({
         address: poolAddress,
         abi: poolABI,
         functionName: swapFunction,
@@ -76,12 +80,55 @@ export default function SwapComponent() {
     }
   };
 
+  const { data: reserves } = useReadContract({
+    address: poolAddress,
+    abi: poolABI,
+    functionName: "getReserves",
+  });
+
+  function getAmountOut(amountIn, reserveIn, reserveOut) {
+    const amountInWithFee = amountIn * 997;
+    const numerator = amountInWithFee * reserveOut;
+    const denominator = reserveIn * 1000 + amountInWithFee;
+    return numerator / denominator;
+  }
+
+  const { isPending, isSuccess, isError } = useWaitForTransactionReceipt({
+    hash: writeSwap,
+  });
+
+  useEffect(() => {
+    if (writeSwap && isSuccess) {
+      refetchINHXBalance();
+      refetchMUSDTBalance();
+    }
+  }, [writeSwap, isSuccess]);
+
+
   const flipTokens = () => {
     setIsMUSDTToINHX((prev) => !prev);
     setInputAmount("0");
   };
 
   const { from, to } = getTokenLabels();
+
+  useEffect(() => {
+    if (!reserves || !inputAmount || Number(inputAmount) <= 0) {
+      setEstimatedAmountOut("0");
+      return;
+    }
+  
+    const amountIn = Number(inputAmount);
+    const reserveA = Number(formatUnits(reserves[0], decimals));
+    const reserveB = Number(formatUnits(reserves[1], decimals));
+  
+    const [reserveIn, reserveOut] = isMUSDTToINHX
+      ? [reserveA, reserveB]
+      : [reserveB, reserveA];
+  
+    const out = getAmountOut(amountIn, reserveIn, reserveOut);
+    setEstimatedAmountOut(out.toFixed(6)); // ou adapte la précision
+  }, [inputAmount, reserves, isMUSDTToINHX]);
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-md max-w-md mx-auto space-y-4">
@@ -113,7 +160,7 @@ export default function SwapComponent() {
         <input
           type="text"
           disabled
-          value="~ Estimated at swap"
+          value={estimatedAmountOut}
           className="bg-gray-100 px-4 py-2 rounded w-full"
         />
       </div>

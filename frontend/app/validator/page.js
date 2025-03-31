@@ -13,19 +13,19 @@ import {
   } from "@/constants";
 import { parseAbiItem } from 'viem'
 import { publicClient } from '@/utils/client'
-import ValidatorDashboard from "@/components/shared/Validator";
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import ValidatorDashboard from "@/components/shared/Validator";
+import NotConnected from "@/components/shared/NotConnected";
 
 export default function Validator() {
 
+    const {address, isConnected} = useAccount();
  
-    return (
+      return (
+        <>
+          {isConnected ? <ValidatorDashboard /> : <NotConnected />}
+        </>
+      );
+    }
 
-    <>
-    <ValidatorDashboard/>
-    </>
-
-    )
-
-}
