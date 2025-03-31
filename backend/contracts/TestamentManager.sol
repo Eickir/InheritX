@@ -2,17 +2,22 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol"; 
 import "./ValidatorPool.sol";
 
-contract TestamentManager is ERC721, Ownable {
+contract TestamentManager is ERC721URIStorage, Ownable {
 
     // stateVariable
-    enum Status {Pending, Rejected, Approved}
+    enum Status {Pending, Rejected, Approved, Outdated}
+    uint256 private _tokenIdCounter;
     struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Status status;}
-    mapping (address => TestamentInfo) private lastTestament;
-    mapping (address => TestamentInfo[]) private testaments;
+    mapping(string => string) private decryptionKeys;
+    mapping(address => TestamentInfo) private lastTestament;
+    mapping(address => TestamentInfo[]) private testaments;
+    mapping(uint256 => string) private encryptedKeys;
+    
+
     
     // events 
     event TestamentDeposited(address indexed _depositor, string _cid);
@@ -39,46 +44,70 @@ contract TestamentManager is ERC721, Ownable {
     // Modifier pour les fonctions nécessitant un paiement
     modifier requiresPayment(uint256 _amount) {
         require(
-            paymentToken.balanceOf(msg.sender) - _amount > 0,
+            paymentToken.balanceOf(msg.sender) >= _amount,
             HasNotEnoughToken()
         );
         _;
     }
 
-
-    // deposit testament 
-    function depositTestament(string calldata _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
-        require(lastTestament[msg.sender].depositTimestamp == 0, "Testament already exists");
+    function depositTestament(string memory _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
         paymentToken.transferFrom(msg.sender, address(this), _amount);
-        lastTestament[msg.sender] = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+
+        if (lastTestament[msg.sender].depositTimestamp != 0) {
+            lastTestament[msg.sender].status = Status.Outdated;
+        }
+
+        TestamentInfo memory _myTestament = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+        
+        decryptionKeys[_cid] = _decryptionKey;
+        lastTestament[msg.sender] = _myTestament;
+        testaments[msg.sender].push(_myTestament);
+
         emit TestamentDeposited(msg.sender, _cid);
     }
 
     // check testament -> intervention des validateurs 
-    function approveTestament(address _testator, bool _approved) external {
-        require(validatorPool.isAuthorized(msg.sender), "Not authorized notary");
+    function approveTestament(address _validator, address _testator) external {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
-        if (_approved) {
-            lastTestament[_testator].status = Status.Approved;
-            _mintSBT(_testator, lastTestament[_testator].cid);
-            emit TestamentApproved(_testator, lastTestament[_testator].cid);
-        } else {
-            lastTestament[_testator].status = Status.Rejected;
-            emit TestamentRejected(_testator, lastTestament[_testator].cid);
-        }
+        lastTestament[_testator].status = Status.Approved;
+        mintTestament(_testator, lastTestament[_testator].cid, lastTestament[_testator].decryptionKey);
+        emit TestamentApproved(_testator, lastTestament[_testator].cid);
+
     }
 
-    // Interna function to mint the SBT
-    function _mintSBT(address _to, string memory _cid) internal {
-        uint256 newTokenId = testaments[msg.sender].length + 1;
-        _safeMint(_to, newTokenId);
+    function rejectTestament(address _validator, address _testator) external {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
+        require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
+        require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
+
+        lastTestament[_testator].status = Status.Rejected;
+        emit TestamentRejected(_testator, lastTestament[_testator].cid);
+    }
+
+    function mintTestament(address to, string memory _cid, string memory _decryptionKey) internal onlyOwner {
+        
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, _cid);
+        encryptedKeys[tokenId] = _decryptionKey; 
     }
 
     // Getter pour obtenir les informations d’un testament
     function getTestament(address _testator) external view returns (TestamentInfo memory) {
         return lastTestament[_testator];
+    }
+
+    function getTestamentsNumber(address _testator) external view returns(uint256) {
+        return testaments[_testator].length; 
+    }
+
+    function getDecryptedKey(address _validator, string calldata _cid) external view returns(string memory) {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
+        return decryptionKeys[_cid];
     }
 
 }
