@@ -67,8 +67,8 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     }
 
     // check testament -> intervention des validateurs 
-    function approveTestament(address _testator, bool _approved) external {
-        require(validatorPool.isAuthorized(msg.sender), "Not authorized notary");
+    function approveTestament(address _validator, address _testator) external {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
@@ -78,8 +78,8 @@ contract TestamentManager is ERC721URIStorage, Ownable {
 
     }
 
-    function rejectTestament(address _testator, bool _rejected) external {
-        require(validatorPool.isAuthorized(msg.sender), "Not authorized notary");
+    function rejectTestament(address _validator, address _testator) external {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
@@ -93,7 +93,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
         uint256 tokenId = _tokenIdCounter;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, _cid);
-        encryptedKeys[tokenId] = _decryptionKey; // <- Association ici
+        encryptedKeys[tokenId] = _decryptionKey; 
     }
 
     // Getter pour obtenir les informations d’un testament
@@ -105,7 +105,8 @@ contract TestamentManager is ERC721URIStorage, Ownable {
         return testaments[_testator].length; 
     }
 
-    function getDecryptedKey(string calldata _cid) external view returns(string memory) {
+    function getDecryptedKey(address _validator, string calldata _cid) external view returns(string memory) {
+        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         return decryptionKeys[_cid];
     }
 

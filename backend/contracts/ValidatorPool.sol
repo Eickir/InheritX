@@ -12,6 +12,7 @@ contract ValidatorPool is Ownable {
     mapping(address => uint256) public stakes;
     mapping(address => bool) public isValidator;
 
+    // events
     event TokensStaked(address indexed user, uint256 amount);
     event TokensWithdrawn(address indexed user, uint256 amount);
     event AddedToPool(address indexed user);
@@ -47,7 +48,7 @@ contract ValidatorPool is Ownable {
     }
 
     // Retirer les tokens verrouillés et sortir du réseau
-    function withdraw() external {
+    function withdraw(address user) external {
         uint256 amount = stakes[msg.sender];
         require(amount > 0, NoTokensToWithdraw());
 
