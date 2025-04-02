@@ -1,11 +1,17 @@
-// SwapModalWrapper.jsx
 "use client";
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import SwapComponent from "./Swap";
 
-export default function SwapModal({ showSwap, onClose }) {
+export default function SwapModal({ showSwap, onClose, onSwapSuccess }) {
+  
+  const handleTransactionSuccess = () => {
+    console.log("🎯 handleTransactionSuccess triggered");
+    onClose();  
+    console.log("🧩 onSwapSuccess value:", onSwapSuccess);        
+    onSwapSuccess?.(); 
+  };
+
   return (
     <AnimatePresence>
       {showSwap && (
@@ -30,11 +36,10 @@ export default function SwapModal({ showSwap, onClose }) {
             >
               <X size={20} />
             </button>
-            <SwapComponent enableMax enableEstimate />
+            <SwapComponent onTransactionSuccess={handleTransactionSuccess} />
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
-
