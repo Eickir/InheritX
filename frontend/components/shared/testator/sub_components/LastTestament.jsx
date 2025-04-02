@@ -5,6 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 dayjs.extend(utc);
 
 export default function LastTestament({ testamentInfo }) {
+
+  const statusMapping = {
+    0: "Pending",
+    1: "Rejected",
+    2: "Accepted",
+    3: "Outdated"
+  };
+
   return (
     <Card>
       <CardContent>
@@ -15,7 +23,7 @@ export default function LastTestament({ testamentInfo }) {
               <strong>CID :</strong> <span className="break-all">{testamentInfo.cid}</span>
             </p>
             <p>
-              <strong>Statut :</strong> {testamentInfo.status}
+              <strong>Statut :</strong> {statusMapping[testamentInfo.status] || testamentInfo.status}
             </p>
             <p>
               <strong>Déposé le :</strong>{" "}

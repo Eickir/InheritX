@@ -16,7 +16,7 @@ import {
   inhxAddress,
 } from "@/constants";
 
-export default function SwapComponent() {
+export default function SwapComponent({ onTransactionSuccess }) {
   const { address } = useAccount();
   const { writeContract } = useWriteContract();
 
@@ -29,16 +29,11 @@ export default function SwapComponent() {
 
   const {
     data: writeApprove,
-    isError: isWriteApproveError,
-    isLoading: isWriteApproveLoading,
-    isSuccess: isWriteApproveSuccess,
     writeContract: writeApproveFunction,
   } = useWriteContract();
 
   const {
     data: writeSwap,
-    isError: isWriteError,
-    isLoading: isWriteLoading,
     isSuccess: isWriteSuccess,
     writeContract: writeSwapFunction,
   } = useWriteContract();
@@ -71,15 +66,15 @@ export default function SwapComponent() {
         ? "swapTokenBForTokenA"
         : "swapTokenAForTokenB";
 
-      writeApproveFunction({
+      await writeApproveFunction({
         address: tokenInAddress,
         abi: isMUSDTToINHX ? musdtABI : inhxABI,
         functionName: "approve",
         args: [poolAddress, amountIn],
         account: address,
       });
-
-      writeSwapFunction({
+      console.log("Swap ....");
+      await writeSwapFunction({
         address: poolAddress,
         abi: poolABI,
         functionName: swapFunction,
@@ -107,7 +102,7 @@ export default function SwapComponent() {
     return numerator / denominator;
   }
 
-  const { isPending, isSuccess, isError } = useWaitForTransactionReceipt({
+  const { isSuccess } = useWaitForTransactionReceipt({
     hash: writeSwap,
   });
 
@@ -115,6 +110,9 @@ export default function SwapComponent() {
     if (writeSwap && isSuccess) {
       refetchINHXBalance();
       refetchMUSDTBalance();
+      if (onTransactionSuccess) {
+        onTransactionSuccess(); 
+      }
     }
   }, [writeSwap, isSuccess]);
 

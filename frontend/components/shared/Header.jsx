@@ -2,10 +2,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import SwapModalWrapper from "./SwapModalWraper";
 import { useState } from "react";
 
-export default function Header() {
+export default function Header({ onSwapSuccess }) {
   const [showSwap, setShowSwap] = useState(false);
   const pathname = usePathname();
   const eligiblePaths = ["/login", "/testator", "/validator"];
@@ -19,20 +18,9 @@ export default function Header() {
 
       {isEligible && (
         <div className="flex items-center gap-8">
-          {/* ConnectButton toujours visible, même non connecté */}
           <ConnectButton accountStatus="address" showBalance={false} />
-          
-          {/* Bouton Swap (non flottant) */}
-          <button
-            onClick={() => setShowSwap(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full shadow-lg font-semibold"
-          >
-            Swap
-          </button>
         </div>
       )}
-
-      <SwapModalWrapper showSwap={showSwap} onClose={() => setShowSwap(false)} />
     </header>
   );
 }

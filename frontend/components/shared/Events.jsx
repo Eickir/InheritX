@@ -13,7 +13,6 @@ export default function EventLogList({ events }) {
     setExpandedEventIndex(expandedEventIndex === index ? null : index);
   };
 
-  // Filtrage des événements en fonction du type et du champ de recherche
   const filteredEvents = events.filter((event) => {
     if (filterType !== "All" && event.type !== filterType) return false;
     if (searchTerm) {
@@ -27,7 +26,6 @@ export default function EventLogList({ events }) {
     return true;
   });
 
-  // Tri par timestamp décroissant (s'il existe) ou par numéro de bloc décroissant
   const sortedEvents = filteredEvents.sort((a, b) => {
     if (a.timestamp && b.timestamp) {
       return b.timestamp - a.timestamp;
@@ -35,11 +33,11 @@ export default function EventLogList({ events }) {
     return Number(b.blockNumber) - Number(a.blockNumber);
   });
 
-  // Mapping des titres d'événements pour l'affichage
   const eventTitles = {
     TestamentDeposited: "Testament Deposited",
     TestamentApproved: "Testament Approved",
     TestamentRejected: "Testament Rejected",
+    TestamentOutdated: "Testament Outdated",
     SwapToken: "Swap Token",
     TokensStaked: "Tokens Staked",
     TokensWithdrawn: "Tokens Withdrawn",
@@ -48,7 +46,6 @@ export default function EventLogList({ events }) {
     MinStakeUpdated: "Min Stake Updated",
   };
 
-  // Fonction d'export en CSV
   const exportToCSV = () => {
     const headers = ["Type", "Depositor/User", "TransactionHash", "Block", "Date"];
     const csvRows = [headers.join(",")];
@@ -81,7 +78,6 @@ export default function EventLogList({ events }) {
   return (
     <Card>
       <CardContent>
-        {/* En-tête et bouton d'export */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2 text-blue-600">
             <ScrollText className="w-6 h-6" />
@@ -94,8 +90,7 @@ export default function EventLogList({ events }) {
             <Download className="w-4 h-4" /> Export CSV
           </button>
         </div>
-  
-        {/* Filtres et champ de recherche */}
+
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4" />
@@ -108,6 +103,7 @@ export default function EventLogList({ events }) {
               <option value="TestamentDeposited">TestamentDeposited</option>
               <option value="TestamentApproved">TestamentApproved</option>
               <option value="TestamentRejected">TestamentRejected</option>
+              <option value="TestamentOutdated">TestamentOutdated</option>
               <option value="SwapToken">SwapToken</option>
               <option value="TokensStaked">TokensStaked</option>
               <option value="TokensWithdrawn">TokensWithdrawn</option>
@@ -124,9 +120,8 @@ export default function EventLogList({ events }) {
             className="border border-gray-300 rounded px-2 py-1 w-full"
           />
         </div>
-  
+
         {sortedEvents.length > 0 ? (
-          // Conteneur scrollable pour les événements
           <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
             {sortedEvents.map((event, index) => (
               <div
@@ -151,16 +146,18 @@ export default function EventLogList({ events }) {
                     )}
                   </div>
                 </div>
+
                 {expandedEventIndex === index && (
                   <div className="mt-4 text-sm text-gray-700">
-                    {/* Affichage des détails en fonction du type d'événement */}
                     {(event.type === "TestamentDeposited" ||
                       event.type === "TestamentApproved" ||
-                      event.type === "TestamentRejected") && (
+                      event.type === "TestamentRejected" ||
+                      event.type === "TestamentOutdated") && (
                       <p>
                         <span className="font-semibold">Depositor:</span> {event._depositor}
                       </p>
                     )}
+
                     {event.type === "SwapToken" && (
                       <>
                         <p>
@@ -180,8 +177,7 @@ export default function EventLogList({ events }) {
                         </p>
                       </>
                     )}
-  
-                    {/* Nouveaux événements */}
+
                     {(event.type === "TokensStaked" || event.type === "TokensWithdrawn") && (
                       <>
                         <p>
@@ -192,17 +188,19 @@ export default function EventLogList({ events }) {
                         </p>
                       </>
                     )}
+
                     {(event.type === "AddedToPool" || event.type === "RemovedFromPool") && (
                       <p>
                         <span className="font-semibold">Utilisateur:</span> {event.user}
                       </p>
                     )}
+
                     {event.type === "MinStakeUpdated" && (
                       <p>
                         <span className="font-semibold">Nouveau stake minimum:</span> {event.newMinStake}
                       </p>
                     )}
-  
+
                     {event.timestamp && (
                       <p>
                         <span className="font-semibold">Date:</span>{" "}
