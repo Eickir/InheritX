@@ -10,8 +10,9 @@ contract TestamentManager is ERC721URIStorage, Ownable {
 
     // stateVariable
     enum Status {Pending, Rejected, Approved, Outdated}
+    enum Validity {Active,Outdated}
     uint256 private _tokenIdCounter;
-    struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Status status;}
+    struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Validity validity; Status status;}
     mapping(string => string) private decryptionKeys;
     mapping(address => TestamentInfo) private lastTestament;
     mapping(address => TestamentInfo[]) private testaments;
@@ -23,6 +24,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     event TestamentDeposited(address indexed _depositor, string _cid);
     event TestamentApproved(address indexed _testator, string _cid);
     event TestamentRejected(address indexed _testator, string _cid);
+    event TestamentOutdated(address indexed _testator, string _cid);
 
 
     // custom errors 
@@ -54,10 +56,11 @@ contract TestamentManager is ERC721URIStorage, Ownable {
         paymentToken.transferFrom(msg.sender, address(this), _amount);
 
         if (lastTestament[msg.sender].depositTimestamp != 0) {
-            lastTestament[msg.sender].status = Status.Outdated;
+            lastTestament[msg.sender].validity = Validity.Outdated;
+            emit TestamentOutdated(msg.sender, lastTestament[msg.sender].cid);
         }
 
-        TestamentInfo memory _myTestament = TestamentInfo(_cid, _decryptionKey, block.timestamp, Status.Pending);
+        TestamentInfo memory _myTestament = TestamentInfo(_cid, _decryptionKey, block.timestamp, Validity.Active, Status.Pending);
         
         decryptionKeys[_cid] = _decryptionKey;
         lastTestament[msg.sender] = _myTestament;
@@ -70,6 +73,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     function approveTestament(address _validator, address _testator) external {
         require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
+        require(lastTestament[_testator].validity == Validity.Active, "Testament is Outdated");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
         lastTestament[_testator].status = Status.Approved;
@@ -81,6 +85,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     function rejectTestament(address _validator, address _testator) external {
         require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
+        require(lastTestament[_testator].validity == Validity.Active, "Testament is Outdated");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
         lastTestament[_testator].status = Status.Rejected;

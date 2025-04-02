@@ -1710,6 +1710,25 @@ export const testamentManagerABI=[
         "type": "string"
       }
     ],
+    "name": "TestamentOutdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_testator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_cid",
+        "type": "string"
+      }
+    ],
     "name": "TestamentRejected",
     "type": "event"
   },
@@ -1885,6 +1904,11 @@ export const testamentManagerABI=[
             "internalType": "uint256",
             "name": "depositTimestamp",
             "type": "uint256"
+          },
+          {
+            "internalType": "enum TestamentManager.Validity",
+            "name": "validity",
+            "type": "uint8"
           },
           {
             "internalType": "enum TestamentManager.Status",
