@@ -3,10 +3,12 @@ pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./ValidatorPool.sol";
 
-contract TestamentManager is ERC721URIStorage, Ownable {
+contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
 
     // stateVariable
     enum Status {Pending, Rejected, Approved, Outdated}
@@ -37,7 +39,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
 
     constructor(address _validatorPool, address _paymentToken)
         ERC721("Soulbound Testament", "SBT")
-        Ownable (msg.sender)
+        Ownable(msg.sender)
     {
         validatorPool = ValidatorPool(_validatorPool);
         paymentToken = IERC20(_paymentToken);
@@ -73,7 +75,6 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     function approveTestament(address _validator, address _testator) external {
         require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
-        require(lastTestament[_testator].validity == Validity.Active, "Testament is Outdated");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
         lastTestament[_testator].status = Status.Approved;
@@ -85,14 +86,13 @@ contract TestamentManager is ERC721URIStorage, Ownable {
     function rejectTestament(address _validator, address _testator) external {
         require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         require(lastTestament[_testator].depositTimestamp != 0, "No testament found");
-        require(lastTestament[_testator].validity == Validity.Active, "Testament is Outdated");
         require(lastTestament[_testator].status == Status.Pending, "Testament already processed");
 
         lastTestament[_testator].status = Status.Rejected;
         emit TestamentRejected(_testator, lastTestament[_testator].cid);
     }
 
-    function mintTestament(address to, string memory _cid, string memory _decryptionKey) internal onlyOwner {
+    function mintTestament(address to, string memory _cid, string memory _decryptionKey) internal {
         
         _tokenIdCounter++;
         uint256 tokenId = _tokenIdCounter;
@@ -100,6 +100,7 @@ contract TestamentManager is ERC721URIStorage, Ownable {
         _setTokenURI(tokenId, _cid);
         encryptedKeys[tokenId] = _decryptionKey; 
     }
+
 
     // Getter pour obtenir les informations d’un testament
     function getTestament(address _testator) external view returns (TestamentInfo memory) {
@@ -114,5 +115,44 @@ contract TestamentManager is ERC721URIStorage, Ownable {
         require(validatorPool.isAuthorized(_validator), "Not authorized notary");
         return decryptionKeys[_cid];
     }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _update(
+    address to,
+    uint256 tokenId,
+    address auth
+) internal override returns (address) {
+    address from = _ownerOf(tokenId);
+
+    // autoriser uniquement mint (from == address(0)) et burn (to == address(0))
+    if (from != address(0) && to != address(0)) {
+        revert("Soulbound: Transfers are disabled");
+    }
+
+    return super._update(to, tokenId, auth);
+}
+
+function burnTestament(uint256 tokenId) external {
+    require(ownerOf(tokenId) == msg.sender, "Not token owner");
+    _burn(tokenId);
+}
+
 
 }

@@ -37,16 +37,11 @@ contract InheritXLiquidityPool is Ownable {
     event TokenSwapped(string _tokenSent, string _tokenReceived, uint256 _balanceBeforeTokenReceived, uint256 _balanceAfterTokenReceived);
 
     function approveRouter() external onlyOwner {
-        _safeApprove(tokenA, address(router));
-        _safeApprove(tokenB, address(router));
-    }
+        uint256 balanceA = IERC20(tokenA).balanceOf(address(this));
+        uint256 balanceB = IERC20(tokenB).balanceOf(address(this));
 
-    function _safeApprove(address token, address spender) internal {
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(IERC20.approve.selector, spender, type(uint256).max)
-        );
-
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "APPROVE_FAILED");
+        require(IERC20(tokenA).approve(address(router), balanceA), "Approval failed for tokenA");
+        require(IERC20(tokenB).approve(address(router), balanceB), "Approval failed for tokenB");
     }
 
 
