@@ -39,7 +39,7 @@ contract ValidatorPool is Ownable {
         stakingToken.transferFrom(msg.sender, address(this), _amount);
         stakes[msg.sender] += _amount;
 
-        if (stakes[msg.sender] >= minStakeAmount) {
+        if (stakes[msg.sender] == minStakeAmount) {
             isValidator[msg.sender] = true;
             emit AddedToPool(msg.sender);
         }
