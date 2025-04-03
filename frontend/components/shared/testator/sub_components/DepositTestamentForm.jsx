@@ -233,66 +233,46 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
 
   return (
     <Card>
-      <CardContent>
-        <h3 className="text-lg font-semibold mb-2">Déposer un Testament</h3>
-        <Input
-          type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-          ref={fileInputRef}
-          className="mb-2"
-        />
-        <Button
-          onClick={handleDepositTestament}
-          disabled={!file || uploading || !isConnected}
-          className="mb-4"
-        >
-          {uploading ? "Envoi en cours..." : "Déposer pour 100 INHX"}
-        </Button>
+  <CardContent>
+    <h3>Déposer un Testament</h3>
+    <Input type="file" onChange={(e) => setFile(e.target.files[0])} ref={fileInputRef} />
+    <Button onClick={handleDepositTestament} disabled={!file || uploading || !isConnected}>
+      {uploading ? "Envoi en cours..." : "Déposer pour 100 INHX"}
+    </Button>
 
-        {statusMessage && (
-          <div
-            className={`mb-4 p-3 rounded-md text-sm flex items-center gap-2 ${
-              statusMessage.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {statusMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4" />
-            ) : (
-              <AlertCircle className="w-4 h-4" />
-            )}
-            {statusMessage.text}
-          </div>
-        )}
+    {statusMessage && (
+      <div>
+        {statusMessage.type === "success" ? <CheckCircle2 /> : <AlertCircle />}
+        {statusMessage.text}
+      </div>
+    )}
 
-        {showSteps && (
-          <ul className="space-y-2 text-sm">
-            {[
-              ["encryption", "Chiffrement du fichier"],
-              ["ipfs", "Dépôt sur IPFS"],
-              ["approval", "Approbation du transfert"],
-              ["contract", "Dépôt sur le smart contract"],
-            ].map(([step, label]) => {
-              let icon = null;
-              const started = progress[`${step}Started`];
-              const done = progress[`${step}Done`];
-              const failed = (step === "approval" && approvalFailed) || (step === "contract" && contractError);
-              if (failed) {
-                icon = <XCircle className="text-red-500 w-4 h-4" />;
-              } else if (done) {
-                icon = <CheckCircle className="text-green-500 w-4 h-4" />;
-              } else if (started) {
-                icon = <Loader2 className="text-gray-400 w-4 h-4 animate-spin" />;
-              }
-              return (
-                <li key={step} className="flex items-center gap-2">
-                  {icon}
-                  {label}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    {showSteps && (
+      <ul>
+        {[
+          ["encryption", "Chiffrement du fichier"],
+          ["ipfs", "Dépôt sur IPFS"],
+          ["approval", "Approbation du transfert"],
+          ["contract", "Dépôt sur le smart contract"],
+        ].map(([step, label]) => {
+          let icon = null;
+          const started = progress[`${step}Started`];
+          const done = progress[`${step}Done`];
+          const failed = (step === "approval" && approvalFailed) || (step === "contract" && contractError);
+          if (failed) icon = <XCircle />;
+          else if (done) icon = <CheckCircle />;
+          else if (started) icon = <Loader2 className="animate-spin" />;
+          return (
+            <li key={step}>
+              {icon}
+              {label}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </CardContent>
+</Card>
+
   );
 }

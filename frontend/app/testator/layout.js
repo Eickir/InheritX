@@ -2,19 +2,25 @@
 import { useAccount } from "wagmi";
 import Sidebar from "@/components/shared/testator/sub_components/Sidebar";
 import Header from "@/components/shared/testator/sub_components/Header";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import SwapModalWrapper from "@/components/shared/SwapModalWraper";
 
 export default function TestatorLayout({ children, setSwapSuccessCallback }) {
   const { address } = useAccount();
   const [showSwap, setShowSwap] = useState(false);
-  const [onSwapSuccess, setOnSwapSuccess] = useState(() => () => {}); // default to noop
+  const [onSwapSuccess, setOnSwapSuccess] = useState(() => () => {}); // noop
 
   // Permet à la page de définir sa fonction callback
   if (setSwapSuccessCallback) {
     setSwapSuccessCallback(setOnSwapSuccess);
   }
 
+  // 🔒 Si l'utilisateur n'est pas connecté : on ne montre que le contenu enfant
+  if (!address) {
+    return <main className="p-6">{children}</main>;
+  }
+
+  // Sinon, layout complet avec sidebar/header/modal
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -24,7 +30,10 @@ export default function TestatorLayout({ children, setSwapSuccessCallback }) {
           showSwap={showSwap}
           onClose={() => setShowSwap(false)}
           onSwapSuccess={() => {
-            if (typeof window !== "undefined" && typeof window.__onSwapSuccessFromDashboard === "function") {
+            if (
+              typeof window !== "undefined" &&
+              typeof window.__onSwapSuccessFromDashboard === "function"
+            ) {
               window.__onSwapSuccessFromDashboard();
             }
           }}

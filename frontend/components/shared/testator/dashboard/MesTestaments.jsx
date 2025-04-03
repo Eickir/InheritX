@@ -9,7 +9,6 @@ import DecryptionSection from "../sub_components/DecryptionSection";
 import EventLogList from "@/components/shared/Events";
 import TestamentStatusTable from "@/components/shared/testator/sub_components/TestamentStatusTable";
 import SwapModalWrapper from "@/components/shared/SwapModalWraper";
-import { Card, CardContent } from "@/components/ui/card";
 
 import {
   inhxAddress,
@@ -23,9 +22,8 @@ import {
 
 import { publicClient } from "@/utils/client";
 import { parseAbiItem } from "viem";
-import ResponsivePieChart from "../sub_components/TestamentPieChart";
 
-export default function DashboardTestament() {
+export default function MesTestaments() {
   const { address, isConnected } = useAccount();
 
   useEffect(() => {
@@ -154,6 +152,7 @@ export default function DashboardTestament() {
   };
 
   const handleSwapSuccess = async () => {
+    console.log("🔁 Swap success triggered in Dashboard");
     const inhx = await refetchINHXBalance();
     const musdt = await refetchMUSDTBalance();
     setInhxBalance(inhx.data);
@@ -195,13 +194,6 @@ export default function DashboardTestament() {
     fetchData();
   }, [address]);
 
-  const metrics = DashboardMetrics({
-    testamentCount,
-    testamentInfo: localTestamentInfo,
-    balanceINHX: inhxBalance,
-    balanceMUSDT: musdtBalance,
-  });
-
   return (
     <>
       <Head>
@@ -209,51 +201,36 @@ export default function DashboardTestament() {
         <meta name="description" content="Dashboard complet pour gérer votre testament sur la blockchain" />
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gray-50">
-        <main className="flex-1 p-4 space-y-8">
-          {/* Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {metrics.map((metric, index) => (
-              <Card key={index}>
-                <CardContent className="flex flex-col items-center p-4">
-                  <span className="text-sm text-gray-600">{metric.label}</span>
-                  <span className="text-2xl font-bold">{metric.value}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="flex min-h-screen bg-gray-50">
+        <div className="flex-1">
+          <main className="p-4 space-y-8">
 
-          {/* Section principale */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] flex-1 overflow-hidden">
-            {/* Colonne gauche */}
-            <div className="lg:col-span-5 flex flex-col space-y-4 h-full">
-              <Card className="flex-1">
-                <CardContent className="p-4 h-full">
-                  <LastTestament testamentInfo={localTestamentInfo} />
-                </CardContent>
-              </Card>
-              <Card className="flex-1">
-                <CardContent className="p-4 h-full">
-                  <ResponsivePieChart events={events} address={address} />
-                </CardContent>
-              </Card>
+            {/* Deux cards côte à côte */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-2xl shadow p-4">
+                <DepositTestamentForm
+                  address={address}
+                  isConnected={isConnected}
+                  onDepositSuccess={handleDepositSuccess}
+                />
+              </div>
+
+              <div className="bg-white rounded-2xl shadow p-4">
+                <DecryptionSection />
+              </div>
             </div>
 
-            {/* Colonne droite */}
-            <div className="lg:col-span-7 flex flex-col h-full">
-            <Card className="overflow-hidden">
-              <div className="p-4 flex flex-col">
-                <div
-                  className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 rounded-md"
-                  style={{ maxHeight: "360px", minHeight: "360px" }}
-                >
-                  <EventLogList events={events} />
-                </div>
-              </div>
-            </Card>
-          </div>
-          </div>
-        </main>
+            {/* Tableau des testaments */}
+            <section>
+              <TestamentStatusTable events={events} address={address} />
+            </section>
+
+            {/* Logs des événements */}
+            <section>
+              <EventLogList events={events} />
+            </section>
+          </main>
+        </div>
       </div>
 
       <SwapModalWrapper
