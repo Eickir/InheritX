@@ -8,14 +8,12 @@ import SwapModalWrapper from "@/components/shared/SwapModalWraper";
 export default function TestatorLayout({ children, setSwapSuccessCallback }) {
   const { address } = useAccount();
   const [showSwap, setShowSwap] = useState(false);
-  const [onSwapSuccess, setOnSwapSuccess] = useState(() => () => {}); // noop
+  const [onSwapSuccess, setOnSwapSuccess] = useState(() => () => {});
 
-  // Permet à la page de définir sa fonction callback
   if (setSwapSuccessCallback) {
     setSwapSuccessCallback(setOnSwapSuccess);
   }
 
-  // 🔒 Si l'utilisateur n'est pas connecté : on ne montre que le contenu enfant
   if (!address) {
     return <main className="p-6">{children}</main>;
   }
