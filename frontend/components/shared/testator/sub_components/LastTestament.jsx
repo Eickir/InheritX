@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
+// Supprime le <h3> du composant, on le gère dans le parent
 export default function LastTestament({ testamentInfo }) {
   const statusMapping = {
     0: "Pending",
@@ -12,24 +13,32 @@ export default function LastTestament({ testamentInfo }) {
   };
 
   return (
-    <>
-      <h3>Dernier Testament</h3>
+    <div className="space-y-2 text-sm text-gray-700">
       {testamentInfo && testamentInfo.cid ? (
-        <div>
-          <p>
-            <strong>CID :</strong> <span>{testamentInfo.cid}</span>
-          </p>
-          <p>
-            <strong>Statut :</strong> {statusMapping[testamentInfo.status] || testamentInfo.status}
-          </p>
-          <p>
-            <strong>Déposé le :</strong>{" "}
-            {dayjs.unix(Number(testamentInfo.depositTimestamp)).utc().format("YYYY-MM-DD HH:mm:ss")}
-          </p>
-        </div>
+        <>
+          <div className="flex items-start gap-1">
+            <span className="font-medium text-gray-600">CID :</span>
+            <span className="break-all">{testamentInfo.cid}</span>
+          </div>
+
+          <div className="flex items-start gap-1">
+            <span className="font-medium text-gray-600">Statut :</span>
+            <span>{statusMapping[testamentInfo.status] || testamentInfo.status}</span>
+          </div>
+
+          <div className="flex items-start gap-1">
+            <span className="font-medium text-gray-600">Déposé le :</span>
+            <span>
+              {dayjs
+                .unix(Number(testamentInfo.depositTimestamp))
+                .utc()
+                .format("YYYY-MM-DD HH:mm:ss")}
+            </span>
+          </div>
+        </>
       ) : (
-        <p>Aucun testament enregistré.</p>
+        <p className="text-gray-500 italic">Aucun testament enregistré.</p>
       )}
-    </>
+    </div>
   );
 }

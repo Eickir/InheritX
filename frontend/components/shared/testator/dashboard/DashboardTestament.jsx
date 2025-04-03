@@ -3,13 +3,12 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import DashboardMetrics from "../sub_components/DashboardMetrics";
-import DepositTestamentForm from "../sub_components/DepositTestamentForm";
 import LastTestament from "../sub_components/LastTestament";
-import DecryptionSection from "../sub_components/DecryptionSection";
 import EventLogList from "@/components/shared/Events";
-import TestamentStatusTable from "@/components/shared/testator/sub_components/TestamentStatusTable";
 import SwapModalWrapper from "@/components/shared/SwapModalWraper";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollText } from "lucide-react";
+
 
 import {
   inhxAddress,
@@ -212,48 +211,64 @@ export default function DashboardTestament() {
       <div className="flex flex-col min-h-screen bg-gray-50">
         <main className="flex-1 p-4 space-y-8">
           {/* Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
-              <Card key={index}>
-                <CardContent className="flex flex-col items-center p-4">
-                  <span className="text-sm text-gray-600">{metric.label}</span>
-                  <span className="text-2xl font-bold">{metric.value}</span>
+              <Card
+                key={index}
+                className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-all"
+              >
+                <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                  <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                    {metric.label}
+                  </span>
+                  {metric.icon}
+                  <span className="text-xl font-light text-gray-700">{metric.value}</span>
                 </CardContent>
               </Card>
             ))}
           </div>
-
           {/* Section principale */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] flex-1 overflow-hidden">
             {/* Colonne gauche */}
             <div className="lg:col-span-5 flex flex-col space-y-4 h-full">
               <Card className="flex-1">
-                <CardContent className="p-4 h-full">
+                <CardContent className="h-full space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                    Dernier Testament
+                  </h3>
                   <LastTestament testamentInfo={localTestamentInfo} />
                 </CardContent>
               </Card>
               <Card className="flex-1">
-                <CardContent className="p-4 h-full">
+                <CardContent className="h-full space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                    Répartition des testaments
+                  </h3>
                   <ResponsivePieChart events={events} address={address} />
                 </CardContent>
               </Card>
             </div>
 
             {/* Colonne droite */}
-            <div className="lg:col-span-7 flex flex-col h-full">
-            <Card className="overflow-hidden">
-              <div className="p-4 flex flex-col">
-                <div
-                  className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 rounded-md"
-                  style={{ maxHeight: "360px", minHeight: "360px" }}
-                >
-                  <EventLogList events={events} />
-                </div>
-              </div>
-            </Card>
+            <div className="lg:col-span-7 flex flex-col h-[600px]"> {/* hauteur = somme des deux cartes gauche */}
+              <Card className="flex-1 flex flex-col overflow-hidden">
+                <CardContent className="flex flex-col space-y-4 overflow-hidden h-full">
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex items-center gap-2">
+                    <ScrollText className="w-5 h-5 text-blue-600" />
+                    Historique des événements
+                  </h3>
+
+                  <div
+                    className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 rounded-md"
+                    style={{ flexGrow: 1 }}
+                  >
+                    <EventLogList events={events} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-          </div>
-        </main>
+      </main>
       </div>
 
       <SwapModalWrapper

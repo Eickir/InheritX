@@ -3,10 +3,10 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 const COLORS = ["#8884d8", "#82ca9d", "#ff6961", "#ffa500"];
 
 const STATUS_LABELS = {
-  TestamentDeposited: "TestamentDeposited",
-  TestamentApproved: "TestamentApproved",
-  TestamentRejected: "TestamentRejected",
-  TestamentOutdated: "TestamentOutdated",
+  TestamentDeposited: "Déposé",
+  TestamentApproved: "Approuvé",
+  TestamentRejected: "Rejeté",
+  TestamentOutdated: "Obsolète",
 };
 
 export default function ResponsivePieChart({ events, address }) {
@@ -30,7 +30,6 @@ export default function ResponsivePieChart({ events, address }) {
 
   return (
     <div className="w-full h-[300px]">
-      <h3 className="text-lg font-semibold mb-3">Testament distribution</h3>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -42,6 +41,7 @@ export default function ResponsivePieChart({ events, address }) {
             innerRadius={50}
             outerRadius={80}
             labelLine={false}
+            isAnimationActive={true}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

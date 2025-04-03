@@ -83,42 +83,42 @@ export default function ValidatorDashboard() {
         publicClient.getLogs({
           address: testamentManagerAddress,
           event: parseAbiItem("event TestamentDeposited(address indexed _depositor, string _cid)"),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: testamentManagerAddress,
           event: parseAbiItem('event TestamentApproved(address indexed _depositor, string _cid)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: testamentManagerAddress,
           event: parseAbiItem('event TestamentRejected(address indexed _depositor, string _cid)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: validatorPoolAddress,
           event: parseAbiItem('event TokensStaked(address indexed user, uint256 amount)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: validatorPoolAddress,
           event: parseAbiItem('event TokensWithdrawn(address indexed user, uint256 amount)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: validatorPoolAddress,
           event: parseAbiItem('event AddedToPool(address indexed user)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: validatorPoolAddress,
           event: parseAbiItem('event RemovedFromPool(address indexed user)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
         publicClient.getLogs({
           address: validatorPoolAddress,
           event: parseAbiItem('event MinStakeUpdated(uint256 newMinStake)'),
-          fromBlock: 22123608n,
+          fromBlock: 22187326n,
         }),
       ]);
 
