@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle, CheckCircle2, AlertCircle } from "lucide-react";
 import CryptoJS from "crypto-js";
-import { parseUnits } from "viem";
+import { formatUnits } from "viem";
 import {
   inhxAddress,
   inhxABI,
@@ -13,14 +10,9 @@ import {
 } from "@/constants";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 
-//
-// Composant parent : il contrôle le remount complet en changeant la clé passée au composant interne.
-//
-export default function DepositTestamentForm({ address, isConnected, onDepositSuccess }) {
+export default function DepositTestamentForm({ address, isConnected, onDepositSuccess, depositFee }) {
   const [resetKey, setResetKey] = useState(0);
 
-  // Cette fonction sera appelée par le composant interne lorsque le processus est terminé
-  // afin de forcer un remount complet.
   const handleReset = () => {
     setResetKey((prev) => prev + 1);
   };
@@ -32,16 +24,12 @@ export default function DepositTestamentForm({ address, isConnected, onDepositSu
       isConnected={isConnected}
       onDepositSuccess={onDepositSuccess}
       onProcessFinished={handleReset}
+      depositFee={depositFee}  // Prop uniformisée
     />
   );
 }
 
-//
-// Composant interne : toute la logique du dépôt se trouve ici.
-// Lorsqu'un dépôt se termine, un timer de 5 secondes appelle onProcessFinished
-// (qui force le remount complet via le composant parent).
-//
-function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, onProcessFinished }) {
+function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, onProcessFinished, depositFee }) {
   const [file, setFile] = useState(null);
   const [cid, setCid] = useState("");
   const [encryptionKey, setEncryptionKey] = useState("");
@@ -52,6 +40,7 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
   const [contractError, setContractError] = useState(false);
   const [ignoreErrors, setIgnoreErrors] = useState(false);
   const fileInputRef = useRef(null);
+  const [depositHandled, setDepositHandled] = useState(false);
 
   const [progress, setProgress] = useState({
     encryptionStarted: false,
@@ -94,7 +83,6 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
     return CryptoJS.AES.encrypt(fileData, secretKey).toString();
   };
 
-  // Réinitialise les états locaux (mais ne remonte pas les hooks externes)
   const resetLocalState = () => {
     setFile(null);
     setCid("");
@@ -106,6 +94,7 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
     setApprovalFailed(false);
     setContractError(false);
     setIgnoreErrors(false);
+    setDepositHandled(false);
     setProgress({
       encryptionStarted: false,
       encryptionDone: false,
@@ -127,7 +116,6 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
       return;
     }
 
-    // Réinitialisation locale avant de lancer le processus
     resetLocalState();
     setIgnoreErrors(false);
     setShowSteps(true);
@@ -155,7 +143,7 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
           address: inhxAddress,
           abi: inhxABI,
           functionName: "approve",
-          args: [testamentManagerAddress, parseUnits("100", 18)],
+          args: [testamentManagerAddress, depositFee],
           account: address,
         });
       } catch (err) {
@@ -197,7 +185,7 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
             address: testamentManagerAddress,
             abi: testamentManagerABI,
             functionName: "depositTestament",
-            args: [cid, encryptionKey, parseUnits("100", 18)],
+            args: [cid, encryptionKey, depositFee],
             account: address,
           });
         } catch (err) {
@@ -209,22 +197,22 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
       }
     };
     sendDeposit();
-  }, [isApprovalSuccess, cid, encryptionKey, writeDeposit, approvalFailed, transactionLaunched, address]);
+  }, [isApprovalSuccess, cid, encryptionKey, writeDeposit, approvalFailed, transactionLaunched, address, depositFee]);
 
   useEffect(() => {
-    if (isDepositSuccess) {
+    if (isDepositSuccess && !depositHandled) {
+      setDepositHandled(true);
       setProgress((p) => ({ ...p, contractDone: true }));
       setStatusMessage({ type: "success", text: "Testament déposé avec succès !" });
       setUploading(false);
       onDepositSuccess?.();
     }
-  }, [isDepositSuccess, onDepositSuccess]);
+  }, [isDepositSuccess, depositHandled, onDepositSuccess]);
 
-  // Dès que le processus est terminé (uploading false et statusMessage présent),
-  // on lance un timer de 5 secondes pour forcer le remount complet via onProcessFinished.
   useEffect(() => {
     if (!uploading && showSteps && statusMessage) {
       const timer = setTimeout(() => {
+        setDepositHandled(false); // Reset pour le prochain dépôt
         onProcessFinished();
       }, 5000);
       return () => clearTimeout(timer);
@@ -232,67 +220,75 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
   }, [uploading, showSteps, statusMessage, onProcessFinished]);
 
   return (
-    <Card>
-      <CardContent>
-        <h3 className="text-lg font-semibold mb-2">Déposer un Testament</h3>
-        <Input
-          type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-          ref={fileInputRef}
-          className="mb-2"
-        />
-        <Button
+    <>        
+      <div className="flex w-full items-center gap-4">
+        {/* Input fichier : plus compact */}
+        <div className="w-full max-w-xs">
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files[0])}
+            ref={fileInputRef}
+            className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none"
+          />
+        </div>
+
+        {/* Bouton large */}
+        <button
           onClick={handleDepositTestament}
           disabled={!file || uploading || !isConnected}
-          className="mb-4"
+          className={`flex-1 px-4 py-2 text-sm font-semibold text-white rounded-md transition ${
+            !file || uploading || !isConnected
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
         >
-          {uploading ? "Envoi en cours..." : "Déposer pour 100 INHX"}
-        </Button>
+          {uploading ? "Envoi en cours..." : `Déposer pour ${depositFee? formatUnits(depositFee, 18): '0'} INHX`}
+        </button>
+      </div>
 
-        {statusMessage && (
-          <div
-            className={`mb-4 p-3 rounded-md text-sm flex items-center gap-2 ${
-              statusMessage.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {statusMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4" />
-            ) : (
-              <AlertCircle className="w-4 h-4" />
-            )}
-            {statusMessage.text}
-          </div>
-        )}
+      {statusMessage && (
+        <div
+          className={`mb-4 p-3 rounded-md text-sm flex items-center gap-2 ${
+            statusMessage.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {statusMessage.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <AlertCircle className="w-4 h-4" />
+          )}
+          {statusMessage.text}
+        </div>
+      )}
 
-        {showSteps && (
-          <ul className="space-y-2 text-sm">
-            {[
-              ["encryption", "Chiffrement du fichier"],
-              ["ipfs", "Dépôt sur IPFS"],
-              ["approval", "Approbation du transfert"],
-              ["contract", "Dépôt sur le smart contract"],
-            ].map(([step, label]) => {
-              let icon = null;
-              const started = progress[`${step}Started`];
-              const done = progress[`${step}Done`];
-              const failed = (step === "approval" && approvalFailed) || (step === "contract" && contractError);
-              if (failed) {
-                icon = <XCircle className="text-red-500 w-4 h-4" />;
-              } else if (done) {
-                icon = <CheckCircle className="text-green-500 w-4 h-4" />;
-              } else if (started) {
-                icon = <Loader2 className="text-gray-400 w-4 h-4 animate-spin" />;
-              }
-              return (
-                <li key={step} className="flex items-center gap-2">
-                  {icon}
-                  {label}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+      {showSteps && (
+        <ul className="space-y-2 text-sm">
+          {[
+            ["encryption", "Chiffrement du fichier"],
+            ["ipfs", "Dépôt sur IPFS"],
+            ["approval", "Approbation du transfert"],
+            ["contract", "Dépôt sur le smart contract"],
+          ].map(([step, label]) => {
+            let icon = null;
+            const started = progress[`${step}Started`];
+            const done = progress[`${step}Done`];
+            const failed = (step === "approval" && approvalFailed) || (step === "contract" && contractError);
+            if (failed) {
+              icon = <XCircle className="text-red-500 w-4 h-4" />;
+            } else if (done) {
+              icon = <CheckCircle className="text-green-500 w-4 h-4" />;
+            } else if (started) {
+              icon = <Loader2 className="text-gray-400 w-4 h-4 animate-spin" />;
+            }
+            return (
+              <li key={step} className="flex items-center gap-2">
+                {icon}
+                {label}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
   );
 }

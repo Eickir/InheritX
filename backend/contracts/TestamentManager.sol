@@ -16,9 +16,12 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     uint256 private _tokenIdCounter;
     struct TestamentInfo {string cid; string decryptionKey; uint depositTimestamp; Validity validity; Status status;}
     mapping(string => string) private decryptionKeys;
+    mapping(string => address) private depositors;
     mapping(address => TestamentInfo) private lastTestament;
     mapping(address => TestamentInfo[]) private testaments;
     mapping(uint256 => string) private encryptedKeys;
+    uint256 public baseDepositFee = 100 * 10**18;
+
     
 
     
@@ -55,6 +58,7 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     }
 
     function depositTestament(string memory _cid, string calldata _decryptionKey, uint256 _amount) external requiresPayment(_amount) {
+        require(_amount == baseDepositFee, "Amount below the base deposit Fee");
         paymentToken.transferFrom(msg.sender, address(this), _amount);
 
         if (lastTestament[msg.sender].depositTimestamp != 0) {
@@ -63,7 +67,7 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
         }
 
         TestamentInfo memory _myTestament = TestamentInfo(_cid, _decryptionKey, block.timestamp, Validity.Active, Status.Pending);
-        
+        depositors[_cid] = msg.sender;
         decryptionKeys[_cid] = _decryptionKey;
         lastTestament[msg.sender] = _myTestament;
         testaments[msg.sender].push(_myTestament);
@@ -111,8 +115,12 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
         return testaments[_testator].length; 
     }
 
-    function getDecryptedKey(address _validator, string calldata _cid) external view returns(string memory) {
-        require(validatorPool.isAuthorized(_validator), "Not authorized notary");
+    function getDecryptedKey(address _validator, string calldata _cid) external view returns (string memory) {
+        // Autorisé si msg.sender est le dépositaire pour ce CID ou s'il est un notaire autorisé
+        require(
+            depositors[_cid] == msg.sender || validatorPool.isAuthorized(_validator),
+            "Not authorized"
+        );
         return decryptionKeys[_cid];
     }
 

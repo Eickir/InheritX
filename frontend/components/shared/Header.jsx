@@ -7,7 +7,7 @@ import { useState } from "react";
 export default function Header({ onSwapSuccess }) {
   const [showSwap, setShowSwap] = useState(false);
   const pathname = usePathname();
-  const eligiblePaths = ["/login", "/testator", "/validator"];
+  const eligiblePaths = ["/testator", "/testator/testaments", "/testator/staking", "/testator/validator",  "/validator"];
   const isEligible = eligiblePaths.includes(pathname);
 
   return (
