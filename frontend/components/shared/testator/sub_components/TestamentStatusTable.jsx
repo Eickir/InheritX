@@ -75,9 +75,7 @@ export default function TestamentStatusTable({ events, address }) {
   }, [events, address]);
 
   return (
-    <Card>
-      <CardContent>
-        <h2 className="text-lg font-semibold mb-4">Mes testaments déposés</h2>
+    <>
         {testaments.length > 0 ? (
           <table className="w-full text-sm">
             <thead>
@@ -128,7 +126,6 @@ export default function TestamentStatusTable({ events, address }) {
         ) : (
           <p className="text-sm text-gray-500">Aucun testament trouvé.</p>
         )}
-      </CardContent>
-    </Card>
+    </>
   );
 }

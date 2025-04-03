@@ -2,14 +2,12 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
-import DashboardMetrics from "../sub_components/DashboardMetrics";
 import DepositTestamentForm from "../sub_components/DepositTestamentForm";
-import LastTestament from "../sub_components/LastTestament";
 import DecryptionSection from "../sub_components/DecryptionSection";
 import EventLogList from "@/components/shared/Events";
 import TestamentStatusTable from "@/components/shared/testator/sub_components/TestamentStatusTable";
 import SwapModalWrapper from "@/components/shared/SwapModalWraper";
-
+import { DollarSign } from "lucide-react";
 import {
   inhxAddress,
   inhxABI,
@@ -21,22 +19,29 @@ import {
 } from "@/constants";
 
 import { publicClient } from "@/utils/client";
-import { parseAbiItem } from "viem";
+import { parseAbiItem, formatUnits } from "viem";
 
 export default function MesTestaments() {
   const { address, isConnected } = useAccount();
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.__setSwapSuccessCallback) {
-      window.__setSwapSuccessCallback(handleSwapSuccess);
-    }
-  }, []);
-
   const [showSwap, setShowSwap] = useState(false);
   const [events, setEvents] = useState([]);
   const [localTestamentInfo, setLocalTestamentInfo] = useState(null);
   const [inhxBalance, setInhxBalance] = useState(null);
   const [musdtBalance, setMusdtBalance] = useState(null);
+  const [depositFeeState, setDepositFeeState] = useState(0);
+
+  const { data: depositFee } = useReadContract({
+    address: testamentManagerAddress,
+    abi: testamentManagerABI,
+    functionName: "baseDepositFee",
+    account: address,
+  });
+
+  useEffect(() => {
+    if (depositFee !== 0) {
+      setDepositFeeState(depositFee);
+    }
+  }, [depositFee]);
 
   const { data: balanceINHX, refetch: refetchINHXBalance } = useReadContract({
     address: inhxAddress,
@@ -152,7 +157,6 @@ export default function MesTestaments() {
   };
 
   const handleSwapSuccess = async () => {
-    console.log("🔁 Swap success triggered in Dashboard");
     const inhx = await refetchINHXBalance();
     const musdt = await refetchMUSDTBalance();
     setInhxBalance(inhx.data);
@@ -197,38 +201,71 @@ export default function MesTestaments() {
   return (
     <>
       <Head>
-        <title>{address ? `${address.slice(0, 6)}...${address.slice(-4)} dashboard` : "Dashboard"}</title>
-        <meta name="description" content="Dashboard complet pour gérer votre testament sur la blockchain" />
+        <title>{address ? `${address.slice(0, 6)}...${address.slice(-4)} - Mes Testaments` : "Mes Testaments"}</title>
+        <meta name="description" content="Consultez et gérez vos testaments blockchain" />
       </Head>
 
       <div className="flex min-h-screen bg-gray-50">
         <div className="flex-1">
           <main className="p-4 space-y-8">
 
-            {/* Deux cards côte à côte */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl shadow p-4">
-                <DepositTestamentForm
-                  address={address}
-                  isConnected={isConnected}
-                  onDepositSuccess={handleDepositSuccess}
-                />
+          <div
+            className="grid gap-6"
+            style={{ gridTemplateColumns: "0.75fr 1.5fr 1.5fr" }}
+          >
+            {/* Carte Coût du dépôt (colonne réduite) */}
+            <section className="bg-white rounded-2xl shadow p-4 flex flex-col items-center justify-center text-center">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 w-full">
+                Coût du dépôt
+              </h3>
+              <div className="flex items-center justify-center mt-2 space-x-2">
+                <DollarSign className="w-6 h-6 text-gray-600" />
+                <span className="text-xl font-light text-gray-900">
+                  {depositFee ? formatUnits(depositFee,18): '0'} INHX
+                </span>
               </div>
+            </section>
 
-              <div className="bg-white rounded-2xl shadow p-4">
-                <DecryptionSection />
-              </div>
-            </div>
+            {/* Carte Déposer un testament */}
+            <section className="bg-white rounded-2xl shadow p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                Déposer un testament
+              </h3>
+              <DepositTestamentForm
+                address={address}
+                isConnected={isConnected}
+                onDepositSuccess={handleDepositSuccess}
+                depositFee={depositFeeState}
+              />
+            </section>
 
-            {/* Tableau des testaments */}
-            <section>
+            {/* Carte Déchiffrer un testament */}
+            <section className="bg-white rounded-2xl shadow p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                Déchiffrer un testament
+              </h3>
+              <DecryptionSection />
+            </section>
+          </div>
+
+
+            {/* Tableau des testaments déposés */}
+            <section className="bg-white rounded-2xl shadow p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Mes testaments déposés</h3>
               <TestamentStatusTable events={events} address={address} />
             </section>
 
             {/* Logs des événements */}
-            <section>
-              <EventLogList events={events} />
+            <section className="bg-white rounded-2xl shadow p-6 space-y-4 h-[600px] flex flex-col overflow-hidden">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Historique des événements</h3>
+              <div
+                className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 rounded-md"
+                style={{ flexGrow: 1 }}
+              >
+                <EventLogList events={events} />
+              </div>
             </section>
+
           </main>
         </div>
       </div>
