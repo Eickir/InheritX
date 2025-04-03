@@ -47,6 +47,7 @@ export default function DecryptionSection({ address }) {
 
   const decryptFile = (encryptedData, secretKey) => {
     try {
+      console.log(secretKey);
       const bytes = CryptoJS.AES.decrypt(encryptedData, secretKey);
       const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
       let content = null;
