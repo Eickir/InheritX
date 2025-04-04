@@ -113,7 +113,7 @@ async function main() {
   }
 
   // 9. Deploy ValidatorPool
-  const stakeEntryAmount = 100;
+  const stakeEntryAmount = hre.ethers.parseUnits("100", 18);
   console.log("Amount to enter the Validator Network: ", stakeEntryAmount);
   const ValidatorPool = await hre.ethers.getContractFactory("ValidatorPool");
   const validatorPool = await ValidatorPool.deploy(INHXAddress, stakeEntryAmount);
