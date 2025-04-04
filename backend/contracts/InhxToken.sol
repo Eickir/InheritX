@@ -8,6 +8,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title InhxToken
+ * @author Richard Lavoura
  * @dev ERC20 token with pausable functionality, capped supply, and minting restricted to the owner.
  * The contract is paused immediately after deployment.
  */

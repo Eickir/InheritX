@@ -43,7 +43,7 @@ describe("InhxToken Tests", function () {
     await inhxToken.pause();
     await expect(
       inhxToken.transfer(addr1.address, ethers.parseEther("10"))
-    ).to.be.revertedWith("ERC20Pausable: token transfer while paused");
+    ).to.be.revertedWithCustomError(inhxToken, "EnforcedPause")
   });
 
   it("should allow transfers after unpausing", async function () {
