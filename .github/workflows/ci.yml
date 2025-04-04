@@ -26,9 +26,11 @@ jobs:
           path: 'node_modules'
           key: node_modules-${{ hashFiles('package-lock.json') }}
 
-      - name: Install dependencies
+      - name: Install dependencies in backend
+        working-directory: ./backend
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Run Tests
+      - name: Run Tests in backend
+        working-directory: ./backend
         run: npx hardhat test
