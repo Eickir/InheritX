@@ -31,7 +31,7 @@ import {
 import { publicClient } from "@/utils/client";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function ValidatorDashboard() {
+export default function ValidatorTestament() {
   const { address } = useAccount();
   const [authorized, setAuthorized] = useState(false);
   const [pendingTestaments, setPendingTestaments] = useState([]);
@@ -468,61 +468,22 @@ export default function ValidatorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {!isAuthorized ? (
-        <section className="bg-white rounded-lg shadow p-4 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Rejoindre le réseau</h2>
-          <EnterPool onStake={handleStake}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-4 shadow">
-                  <EnterPool.Info />
-              </Card>
-              <Card className="p-4 shadow">
-                <CardContent>
-                  <EnterPool.Action />
-                </CardContent>
-              </Card>
-            </div>
-          </EnterPool>
-        </section>
-      ) : (
-        <>
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {ValidatorMetrics({
-            pendingCount: pendingTestaments.length,
-            checkedCount,
-            rejectedRatio,
-            stakedINHX: BigInt(stakedAmount || "0"),
-          }).map((metric, index) => (
-            <Card
-              key={index}
-              className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-all"
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
-                <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">
-                  {metric.label}
-                </span>
-                {metric.icon}
-                <span className="text-xl font-light text-gray-700">{metric.value}</span>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-          <section className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-xl font-semibold mb-4">Testaments en attente</h2>
-            <PendingTestamentTable testaments={pendingTestaments} onDecrypt={decryptCID} />
-          </section>
-        </>
-      )}
+    <>
+      <section className="bg-white rounded-lg shadow p-4">
+        <h2 className="text-xl font-semibold mb-4">Testaments en attente</h2>
+        <PendingTestamentTable testaments={pendingTestaments} onDecrypt={decryptCID} />
+      </section>
+
       {isModalOpen && (
         <DecryptModal
           file={decryptedFile}
-          onApprove={approveTestament}
-          onReject={rejectTestament}
-          onClose={closeModal}
+          onApprove={onApprove}
+          onReject={onReject}
+          onClose={onClose}
           pendingActionHash={pendingActionHash}
         />
       )}
+
       <section className="mt-8">
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardContent className="flex flex-col space-y-4 overflow-hidden h-full">
@@ -540,6 +501,7 @@ export default function ValidatorDashboard() {
           </CardContent>
         </Card>
       </section>
-    </div>
+    </>
   );
 }
+

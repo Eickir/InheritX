@@ -1,23 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccount, useReadContract } from "wagmi";
 import {
   LayoutDashboard,
   FileSearch,
   BarChart
 } from "lucide-react";
+import { validatorPoolABI, validatorPoolAddress } from "@/constants";
 
 export default function SidebarValidator() {
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
+  const { address } = useAccount();
 
-  const menuItems = [
+  const { data: isAuthorized } = useReadContract({
+    address: validatorPoolAddress,
+    abi: validatorPoolABI,
+    functionName: "isAuthorized",
+    args: [address],
+    account: address,
+    watch: true,
+  });
+
+  const allMenuItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, page: "/validator" },
     { label: "Testaments à valider", icon: <FileSearch className="w-5 h-5" />, page: "/validator/testaments" },
     { label: "Mes Stakings", icon: <BarChart className="w-5 h-5" />, page: "/validator/staking" },
   ];
+
+  // Si pas encore autorisé, on ne garde que "Dashboard"
+  const visibleMenuItems = isAuthorized ? allMenuItems : [allMenuItems[0]];
 
   return (
     <div
@@ -35,7 +50,7 @@ export default function SidebarValidator() {
 
         <nav className="flex-1">
           <ul className="space-y-4">
-            {menuItems.map(({ label, icon, page }) => {
+            {visibleMenuItems.map(({ label, icon, page }) => {
               const isActive = pathname === page;
               return (
                 <li key={label}>

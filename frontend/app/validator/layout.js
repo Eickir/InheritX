@@ -3,7 +3,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { useEffect, useState } from "react";
 import { formatUnits } from "viem";
 
-import SidebarValidator from "@/components/shared/validator_dashboard/Sidebar";
+import SidebarValidator from "@/components/shared/validator_dashboard/sub_components/Sidebar";
 import Header from "@/components/shared/validator_dashboard/sub_components/Header";
 import SwapModalWrapper from "@/components/shared/SwapModalWraper";
 
