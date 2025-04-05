@@ -22,6 +22,9 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     /// @notice Base fee required to deposit a testament, denominated in payment tokens.
     uint256 public baseDepositFee = 100 * 10**18;
 
+    /// @notice Base URI used to construct full tokenURI (points to IPFS gateway).
+    string public baseTokenURI;
+
     /**
      * @notice Enum representing the processing status of a testament.
      * @dev Values:
@@ -120,6 +123,14 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
      */
     event TestamentOutdated(address indexed _testator, string _cid);
 
+    /**
+    * @notice Emitted when a Soulbound Testament is minted.
+    * @param to The address receiving the minted token.
+    * @param tokenId The ID of the newly minted token.
+    * @param cid The content identifier (CID) associated with the token.
+    */
+    event TestamentMinted(address indexed to, uint256 indexed tokenId, string cid);
+
     // Custom errors
 
     /**
@@ -155,16 +166,18 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     error TransferDisabledForSBT();
 
     /**
-     * @notice Constructor to initialize the TestamentManager contract.
-     * @param _validatorPool The address of the ValidatorPool contract.
-     * @param _paymentToken The address of the ERC20 token used for payment.
-     */
-    constructor(address _validatorPool, address _paymentToken)
+    * @notice Constructor to initialize the TestamentManager contract.
+    * @param _validatorPool The address of the ValidatorPool contract.
+    * @param _paymentToken The address of the ERC20 token used for payment.
+    * @param _baseTokenURI The base URI used to build full token metadata URLs (e.g., IPFS gateway).
+    */
+    constructor(address _validatorPool, address _paymentToken, string memory _baseTokenURI)
         ERC721("Soulbound Testament", "SBT")
         Ownable(msg.sender)
     {
         validatorPool = ValidatorPool(_validatorPool);
         paymentToken = IERC20(_paymentToken);
+        baseTokenURI = _baseTokenURI;
     }
 
     /**
@@ -252,8 +265,10 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
         _tokenIdCounter++;
         uint256 tokenId = _tokenIdCounter;
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, _cid);
+        string memory fullURI = string(abi.encodePacked(baseTokenURI, _cid));
+        _setTokenURI(tokenId, fullURI);
         encryptedKeys[tokenId] = _decryptionKey;
+        emit TestamentMinted(to, tokenId, _cid);
     }
 
     /**
@@ -340,6 +355,15 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     function burnTestament(uint256 tokenId) external {
         require(ownerOf(tokenId) == msg.sender, NotAuthorized());
         _burn(tokenId);
+    }
+
+    /**
+    * @notice Allows the contract owner to update the base URI used for token metadata.
+    * @dev This affects how tokenURI is constructed from the IPFS CID.
+    * @param _newBaseURI The new base URI to use (e.g., "https://your-gateway.com/ipfs/").
+    */
+    function setBaseTokenURI(string memory _newBaseURI) external onlyOwner {
+        baseTokenURI = _newBaseURI;
     }
 
 }
