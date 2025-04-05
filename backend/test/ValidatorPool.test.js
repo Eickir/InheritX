@@ -71,7 +71,7 @@ describe("ValidatorPool", function () {
       await validatorPool.connect(user1).stake(amount);
 
       const balanceBefore = await inhxToken.balanceOf(user1.address);
-      await expect(validatorPool.connect(user1).withdraw(user1.address))
+      await expect(validatorPool.connect(user1).withdraw())
         .to.emit(validatorPool, "TokensWithdrawn")
         .withArgs(user1.address, amount);
 
@@ -83,7 +83,7 @@ describe("ValidatorPool", function () {
     });
 
     it("should revert withdraw if user has no inhxTokens", async function () {
-      await expect(validatorPool.connect(user1).withdraw(user1.address)).to.be.revertedWithCustomError(
+      await expect(validatorPool.connect(user1).withdraw()).to.be.revertedWithCustomError(
         validatorPool,
         "NoTokensToWithdraw"
       );
