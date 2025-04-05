@@ -1,12 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function DecryptModal({ file, onApprove, onReject, onClose, pendingActionHash }) {
   const maxStyles = {
-    maxHeight: 'calc(90vh - 200px)', // on réduit un peu ici pour laisser de la place aux boutons
+    maxHeight: 'calc(90vh - 200px)',
     maxWidth: 'calc(90vw - 100px)',
   };
+
+  useEffect(() => {
+    if (pendingActionHash) {
+      // Dès qu'une action est validée, on ferme automatiquement
+      const timer = setTimeout(() => {
+        onClose();
+      }, 500); // léger délai pour éviter fermeture trop brutale
+      return () => clearTimeout(timer);
+    }
+  }, [pendingActionHash, onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

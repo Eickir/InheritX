@@ -329,7 +329,40 @@ export default function ValidatorDashboard() {
             ...prev,
             ...allNewEvents.filter((e) => !prev.some((p) => p.transactionHash === e.transactionHash)),
           ];
-          return combined.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+          combined.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+        
+          // MISE À JOUR DES STATS À PARTIR DE combined (pas allNewEvents)
+          const deposits = combined.filter((e) => e.type === "TestamentDeposited");
+          const approvalEvents = combined.filter((e) => e.type === "TestamentApproved");
+          const rejectionEvents = combined.filter((e) => e.type === "TestamentRejected");
+        
+          const approvedCIDs = new Set(approvalEvents.map((e) => e._cid));
+          const rejectedCIDs = new Set(rejectionEvents.map((e) => e._cid));
+          const latestByDepositor = new Map();
+        
+          deposits.forEach((log) => {
+            const depositor = log._depositor;
+            const cid = log._cid;
+            const bn = Number(log.blockNumber);
+            if (!latestByDepositor.has(depositor) || latestByDepositor.get(depositor).blockNumber < bn) {
+              latestByDepositor.set(depositor, { cid, depositor, blockNumber: bn });
+            }
+          });
+        
+          const pending = Array.from(latestByDepositor.values()).filter(
+            (t) => !approvedCIDs.has(t.cid) && !rejectedCIDs.has(t.cid)
+          );
+        
+          setPendingTestaments(pending);
+          setCheckedCount(approvedCIDs.size + rejectedCIDs.size);
+          setRejectedRatio(
+            approvedCIDs.size + rejectedCIDs.size > 0
+              ? `${Math.round((rejectedCIDs.size / (approvedCIDs.size + rejectedCIDs.size)) * 100)}%`
+              : "0%"
+          );
+          setStakedAmount("0"); // à override avec vrai stake plus tard
+        
+          return combined;
         });
 
         const deposits = allNewEvents.filter((e) => e.type === "TestamentDeposited");
@@ -451,7 +484,6 @@ export default function ValidatorDashboard() {
     }
   };
 
-  // et ensuite dans un useEffect pour choper le hash :
   useEffect(() => {
     if (approveTestamentData) {
       console.log("Transaction hash reçu:", approveTestamentData);
@@ -480,10 +512,24 @@ export default function ValidatorDashboard() {
 
   useEffect(() => {
     if (rejectTestamentData) {
-      console.log("Hash rejet reçu :", rejectTestamentData);
       setPendingActionHash(rejectTestamentData);
     }
   }, [rejectTestamentData]);
+
+  const {
+    isSuccess: isApproveTestamentConfirmed,
+  } = useWaitForTransactionReceipt({ hash: approveTestamentData });
+
+  const {
+    isSuccess: isRejectTestamentConfirmed,
+  } = useWaitForTransactionReceipt({ hash: rejectTestamentData });
+
+  useEffect(() => {
+    if (isApproveTestamentConfirmed || isRejectTestamentConfirmed) {
+      getEvents();
+      setIsModalOpen(false); // Ferme le modal automatiquement après confirmation
+    }
+  }, [isApproveTestamentConfirmed, isRejectTestamentConfirmed]);
 
   const closeModal = () => {
     setIsModalOpen(false);

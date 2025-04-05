@@ -8,13 +8,6 @@ const statusMapping = {
   TestamentOutdated: "Outdated",
 };
 
-const validityMapping = {
-  TestamentDeposited: "Active",
-  TestamentApproved: "Active",
-  TestamentRejected: "Inactive",
-  TestamentOutdated: "Outdated",
-};
-
 const statusColors = {
   Pending: "bg-yellow-100 text-yellow-800",
   Approved: "bg-green-100 text-green-800",
@@ -35,57 +28,75 @@ const statusPriority = {
   TestamentDeposited: 0,
 };
 
-export default function TestamentStatusTable({ events, address }) {
-  const testaments = useMemo(() => {
-    const groupedByCid = new Map();
+function getProcessedTestaments(events, address) {
+  const groupedByCid = new Map();
 
-    events
-      .filter(
-        (e) =>
-          e._depositor?.toLowerCase() === address?.toLowerCase() &&
-          ["TestamentDeposited", "TestamentApproved", "TestamentRejected", "TestamentOutdated"].includes(e.type)
-      )
-      .forEach((event) => {
-        const key = event.cid;
-        if (!key) return;
+  events
+    .filter(
+      (e) =>
+        e._depositor?.toLowerCase() === address?.toLowerCase() &&
+        ["TestamentDeposited", "TestamentApproved", "TestamentRejected", "TestamentOutdated"].includes(e.type)
+    )
+    .forEach((event) => {
+      const key = event.cid;
+      if (!key) return;
 
-        if (!groupedByCid.has(key)) {
-          groupedByCid.set(key, []);
-        }
+      if (!groupedByCid.has(key)) {
+        groupedByCid.set(key, []);
+      }
 
-        groupedByCid.get(key).push(event);
-      });
-
-    const result = [];
-
-    groupedByCid.forEach((eventList, cid) => {
-      const sorted = eventList.sort((a, b) => a.timestamp - b.timestamp);
-      const firstEvent = sorted[0];
-      const lastEvent = sorted[sorted.length - 1];
-
-      const dominantEvent = sorted.reduce((prev, current) => {
-        const prevScore = statusPriority[prev.type] ?? -1;
-        const currentScore = statusPriority[current.type] ?? -1;
-        return currentScore > prevScore ? current : prev;
-      }, sorted[0]);
-
-      const status = statusMapping[dominantEvent.type] || dominantEvent.type;
-      const validity = validityMapping[dominantEvent.type] || "Unknown";
-
-      result.push({
-        cid,
-        first_state_timestamp: firstEvent.timestamp,
-        last_state_timestamp: lastEvent.timestamp,
-        rawStatus: dominantEvent.type,
-        status,
-        validity,
-      });
+      groupedByCid.get(key).push(event);
     });
 
-    result.sort((a, b) => b.last_state_timestamp - a.last_state_timestamp);
+  const rawTestaments = [];
 
-    return result;
-  }, [events, address]);
+  groupedByCid.forEach((eventList, cid) => {
+    const sorted = eventList.sort((a, b) => a.timestamp - b.timestamp);
+    const firstEvent = sorted[0];
+    const lastEvent = sorted[sorted.length - 1];
+
+    const dominantEvent = sorted.reduce((prev, current) => {
+      const prevScore = statusPriority[prev.type] ?? -1;
+      const currentScore = statusPriority[current.type] ?? -1;
+      return currentScore > prevScore ? current : prev;
+    }, sorted[0]);
+
+    rawTestaments.push({
+      cid,
+      first_state_timestamp: firstEvent.timestamp,
+      last_state_timestamp: lastEvent.timestamp,
+      rawStatus: dominantEvent.type,
+    });
+  });
+
+  rawTestaments.sort((a, b) => b.last_state_timestamp - a.last_state_timestamp);
+
+  const latestApproved = rawTestaments.find((t) => t.rawStatus === "TestamentApproved");
+
+  const finalTestaments = rawTestaments.map((t) => {
+    const status = statusMapping[t.rawStatus] || t.rawStatus;
+    let validity = "Inactive";
+
+    if (t.rawStatus === "TestamentApproved") {
+      validity = latestApproved?.cid === t.cid ? "Active" : "Inactive";
+    } else if (t.rawStatus === "TestamentDeposited") {
+      validity = latestApproved ? "Inactive" : "Active";
+    } else if (t.rawStatus === "TestamentOutdated") {
+      validity = "Outdated";
+    }
+
+    return {
+      ...t,
+      status,
+      validity,
+    };
+  });
+
+  return finalTestaments;
+}
+
+export default function TestamentStatusTable({ events, address }) {
+  const testaments = useMemo(() => getProcessedTestaments(events, address), [events, address]);
 
   return (
     <>
