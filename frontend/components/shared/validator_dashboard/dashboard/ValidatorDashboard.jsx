@@ -331,7 +331,6 @@ export default function ValidatorDashboard() {
           ];
           combined.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
         
-          // MISE À JOUR DES STATS À PARTIR DE combined (pas allNewEvents)
           const deposits = combined.filter((e) => e.type === "TestamentDeposited");
           const approvalEvents = combined.filter((e) => e.type === "TestamentApproved");
           const rejectionEvents = combined.filter((e) => e.type === "TestamentRejected");
@@ -579,20 +578,7 @@ export default function ValidatorDashboard() {
             </Card>
           ))}
         </section>
-          <section className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-xl font-semibold mb-4">Testaments en attente</h2>
-            <PendingTestamentTable testaments={pendingTestaments} onDecrypt={decryptCID} />
-          </section>
         </>
-      )}
-      {isModalOpen && (
-        <DecryptModal
-          file={decryptedFile}
-          onApprove={approveTestament}
-          onReject={rejectTestament}
-          onClose={closeModal}
-          pendingActionHash={pendingActionHash}
-        />
       )}
       <section className="mt-8">
         <Card className="flex-1 flex flex-col overflow-hidden">
