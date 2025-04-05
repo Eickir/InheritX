@@ -101,6 +101,31 @@ export const inhxABI= [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EtherNotAccepted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MaxSupplyReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MintingFinished",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -153,6 +178,25 @@ export const inhxABI= [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Minted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -164,6 +208,19 @@ export const inhxABI= [
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
     "type": "event"
   },
   {
@@ -190,6 +247,23 @@ export const inhxABI= [
     ],
     "name": "Transfer",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "fallback"
   },
   {
     "inputs": [
@@ -272,6 +346,13 @@ export const inhxABI= [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "finishMinting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -287,6 +368,19 @@ export const inhxABI= [
     "name": "mint",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mintingFinished",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -310,6 +404,26 @@ export const inhxABI= [
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -413,6 +527,17 @@ export const inhxABI= [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ];
 export const musdtABI= [
@@ -508,6 +633,31 @@ export const musdtABI= [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EtherNotAccepted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MaxSupplyReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MintingFinished",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -560,6 +710,25 @@ export const musdtABI= [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Minted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -571,6 +740,19 @@ export const musdtABI= [
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
     "type": "event"
   },
   {
@@ -597,6 +779,23 @@ export const musdtABI= [
     ],
     "name": "Transfer",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "fallback"
   },
   {
     "inputs": [
@@ -679,6 +878,13 @@ export const musdtABI= [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "finishMinting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -694,6 +900,19 @@ export const musdtABI= [
     "name": "mint",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mintingFinished",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -717,6 +936,26 @@ export const musdtABI= [
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -820,6 +1059,17 @@ export const musdtABI= [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ];
 // Liquidity Pool Address
@@ -847,6 +1097,11 @@ export const poolABI=[
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "EtherNotAccepted",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -866,6 +1121,38 @@ export const poolABI=[
       }
     ],
     "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PairDoesNotExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "TokenApprovalFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "TokenTransferFailed",
     "type": "error"
   },
   {
@@ -917,6 +1204,10 @@ export const poolABI=[
     ],
     "name": "TokenSwapped",
     "type": "event"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "fallback"
   },
   {
     "inputs": [
@@ -1088,9 +1379,12 @@ export const poolABI=[
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ];
-
 
 // InheritX Protocol
 // Validator Pool
@@ -1142,6 +1436,11 @@ export const validatorPoolABI=[
       }
     ],
     "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
@@ -1388,13 +1687,7 @@ export const validatorPoolABI=[
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "withdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1531,6 +1824,32 @@ export const testamentManagerABI=[
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "sent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "required",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidDepositFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoTestamentFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotAuthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -1552,7 +1871,12 @@ export const testamentManagerABI=[
   },
   {
     "inputs": [],
-    "name": "TestamentAlreadyExists",
+    "name": "TestamentAlreadyProcessed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferDisabledForSBT",
     "type": "error"
   },
   {
@@ -1681,7 +2005,7 @@ export const testamentManagerABI=[
       {
         "indexed": true,
         "internalType": "address",
-        "name": "_depositor",
+        "name": "_testator",
         "type": "address"
       },
       {
@@ -1777,11 +2101,6 @@ export const testamentManagerABI=[
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_validator",
-        "type": "address"
-      },
       {
         "internalType": "address",
         "name": "_testator",
@@ -1883,11 +2202,6 @@ export const testamentManagerABI=[
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_validator",
-        "type": "address"
-      },
-      {
         "internalType": "string",
         "name": "_cid",
         "type": "string"
@@ -1905,17 +2219,16 @@ export const testamentManagerABI=[
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_testator",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "getTestament",
     "outputs": [
       {
         "components": [
+          {
+            "internalType": "address",
+            "name": "depositor",
+            "type": "address"
+          },
           {
             "internalType": "string",
             "name": "cid",
@@ -1951,13 +2264,7 @@ export const testamentManagerABI=[
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_testator",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "getTestamentsNumber",
     "outputs": [
       {
@@ -2053,11 +2360,6 @@ export const testamentManagerABI=[
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_validator",
-        "type": "address"
-      },
       {
         "internalType": "address",
         "name": "_testator",

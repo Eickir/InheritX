@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+require("dotenv").config();
 
 async function main() {
   
@@ -22,7 +23,7 @@ async function main() {
   console.log("✅ INHX deployed at:", INHXAddress);
 
   // 2️. Deploy MUSDT 
-  const MusdtToken = await hre.ethers.getContractFactory("MockUsdtToken"); // ⚠️ rename file/class if needed
+  const MusdtToken = await hre.ethers.getContractFactory("MockUsdtToken"); 
   const MUSDT = await MusdtToken.deploy(overrides);
   await MUSDT.waitForDeployment();
   const MUSDTAddress = await MUSDT.getAddress();
@@ -113,8 +114,8 @@ async function main() {
   }
 
   // 9. Deploy ValidatorPool
-  const stakeEntryAmount = hre.ethers.parseUnits("100", 18);
-  console.log("Amount to enter the Validator Network: ", stakeEntryAmount);
+  const stakeEntryAmount = hre.ethers.parseUnits("5000", 18);
+  console.log("Amount to enter the Validator Network: ", hre.ethers.formatUnits(stakeEntryAmount, 18));
   const ValidatorPool = await hre.ethers.getContractFactory("ValidatorPool");
   const validatorPool = await ValidatorPool.deploy(INHXAddress, stakeEntryAmount);
   await validatorPool.waitForDeployment();
@@ -122,8 +123,9 @@ async function main() {
   console.log("✅ ValidatorPool deployed at:", validatorPoolAddress);
 
   // 10. Deploy Testament Manager
-  const TestatmentManager = await hre.ethers.getContractFactory("TestamentManager");
-  const testamentManager = await TestatmentManager.deploy(validatorPoolAddress, INHXAddress);
+  const TestamentManager = await hre.ethers.getContractFactory("TestamentManager");
+  const baseTokenURI = process.env.BASE_TOKEN_URI;
+  const testamentManager = await TestamentManager.deploy(validatorPoolAddress, INHXAddress, baseTokenURI);
   await testamentManager.waitForDeployment();
   const testamentManagerAddress = await testamentManager.getAddress();
   console.log("✅ TestamentManager deployed at:", testamentManagerAddress);
