@@ -10,7 +10,7 @@ async function deployContractsFixture() {
   const INHX = await InhxToken.deploy();
   const INHXAddress = await INHX.getAddress();
 
-  const stakeEntryAmount = ethers.parseEther("100");
+  const stakeEntryAmount = ethers.parseEther("5000");
   const ValidatorPool = await ethers.getContractFactory("ValidatorPool");
   const validatorPool = await ValidatorPool.deploy(INHXAddress, stakeEntryAmount);
   const validatorPoolAddress = await validatorPool.getAddress();
@@ -24,13 +24,14 @@ async function deployContractsFixture() {
   await INHX.transfer(user.address, ethers.parseEther("500"));
 
   const TestamentManager = await ethers.getContractFactory("TestamentManager");
-  const testamentManager = await TestamentManager.deploy(validatorPoolAddress, INHXAddress);
+  const baseTokenURI = "https://fake.gateway.test/ipfs/"; // valeur factice
+  const testamentManager = await TestamentManager.deploy(validatorPoolAddress, INHXAddress, baseTokenURI);
   const testamentManagerAddress = await testamentManager.getAddress();
 
   // Autorise le contrat à dépenser les tokens de l'utilisateur
   await INHX.connect(user).approve(testamentManagerAddress, ethers.parseEther("1000"));
 
-  return { owner, user, validator, otherUser, INHX, validatorPool, testamentManager };
+  return { owner, user, validator, otherUser, INHX, validatorPool, testamentManager, baseTokenURI };
 }
 
 // Fixture avec dépôt d'un testament (sans approbation)
@@ -106,7 +107,9 @@ describe("TestamentManager", function () {
         testamentManager.connect(validator).approveTestament(user.address)
       )
         .to.emit(testamentManager, "TestamentApproved")
-        .withArgs(user.address, cid);
+          .withArgs(user.address, cid)
+        .and.to.emit(testamentManager, "TestamentMinted")
+          .withArgs(user.address, 1, cid);
 
       const testament = await testamentManager.connect(user).getTestament();
       expect(testament.status).to.equal(2); // Approved
@@ -123,7 +126,7 @@ describe("TestamentManager", function () {
     });
 
     it("should mint a soulbound NFT with correct tokenURI", async function () {
-      const { user, validator, testamentManager } = await loadFixture(deployContractsFixture);
+      const { user, validator, testamentManager, baseTokenURI } = await loadFixture(deployContractsFixture);
       const cid = "QmMintCheck";
       const key = "encryptedKey123";
       const amount = ethers.parseEther("100");
@@ -132,7 +135,7 @@ describe("TestamentManager", function () {
       await testamentManager.connect(validator).approveTestament(user.address);
     
       const tokenUri = await testamentManager.tokenURI(1);
-      expect(tokenUri).to.equal(cid);
+      expect(tokenUri).to.equal(`${baseTokenURI}${cid}`);
     
       const storedKey = await testamentManager.connect(validator).getDecryptedKey(cid);
       expect(storedKey).to.equal(key);
@@ -289,4 +292,29 @@ describe("TestamentManager", function () {
       ).to.be.revertedWithCustomError(testamentManager, "NotAuthorized");
     });
   });
+
+  describe("BaseTokenURI", function () {
+    it("should initialize baseTokenURI correctly", async function () {
+      const { testamentManager, baseTokenURI } = await loadFixture(deployContractsFixture);
+      expect(await testamentManager.baseTokenURI()).to.equal(baseTokenURI);
+    });
+  
+    it("should allow owner to update baseTokenURI", async function () {
+      const { testamentManager, owner } = await loadFixture(deployContractsFixture);
+      const newUri = "https://new.fake.uri/ipfs/";
+      await testamentManager.connect(owner).setBaseTokenURI(newUri);
+      expect(await testamentManager.baseTokenURI()).to.equal(newUri);
+    });
+
+    it("should revert if non-owner tries to update baseTokenURI", async function () {
+      const { testamentManager, user } = await loadFixture(deployContractsFixture);
+      const newUri = "https://malicious.uri/ipfs/";
+      
+      await expect(
+        testamentManager.connect(user).setBaseTokenURI(newUri)
+      ).to.be.revertedWithCustomError(testamentManager, "OwnableUnauthorizedAccount").withArgs(user.address);
+    });
+
+  });
+
 });

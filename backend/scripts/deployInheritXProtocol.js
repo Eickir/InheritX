@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+require("dotenv").config();
 
 async function main() {
   
@@ -122,8 +123,9 @@ async function main() {
   console.log("✅ ValidatorPool deployed at:", validatorPoolAddress);
 
   // 10. Deploy Testament Manager
-  const TestatmentManager = await hre.ethers.getContractFactory("TestamentManager");
-  const testamentManager = await TestatmentManager.deploy(validatorPoolAddress, INHXAddress);
+  const TestamentManager = await hre.ethers.getContractFactory("TestamentManager");
+  const baseTokenURI = process.env.BASE_TOKEN_URI;
+  const testamentManager = await TestamentManager.deploy(validatorPoolAddress, INHXAddress, baseTokenURI);
   await testamentManager.waitForDeployment();
   const testamentManagerAddress = await testamentManager.getAddress();
   console.log("✅ TestamentManager deployed at:", testamentManagerAddress);
