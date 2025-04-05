@@ -17,8 +17,6 @@ export default function Sidebar() {
   const menuItems = [
     { label: "Mon Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, page: "/testator" },
     { label: "Mes Testaments", icon: <ScrollText className="w-5 h-5" />, page: "/testator/testaments" },
-    { label: "Mes Stakings", icon: <BarChart className="w-5 h-5" />, page: "/testator/staking" },
-    { label: "Devenir Validateur", icon: <ShieldCheck className="w-5 h-5" />, page: "/testator/validator" },
   ];
 
   return (

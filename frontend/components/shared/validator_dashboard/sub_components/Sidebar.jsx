@@ -28,7 +28,6 @@ export default function SidebarValidator() {
   const allMenuItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, page: "/validator" },
     { label: "Testaments à valider", icon: <FileSearch className="w-5 h-5" />, page: "/validator/testaments" },
-    { label: "Mes Stakings", icon: <BarChart className="w-5 h-5" />, page: "/validator/staking" },
   ];
 
   // Si pas encore autorisé, on ne garde que "Dashboard"
