@@ -13,8 +13,8 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract MockUsdtToken is ERC20, ERC20Pausable, Ownable {
 
-    /// @notice Maximum supply of tokens (1 million INHX with 18 decimals)
-    uint256 private constant MAX_SUPPLY = 1_000_000 ether;
+    /// @notice Maximum supply of tokens (2 million MUSDT with 18 decimals)
+    uint256 private constant MAX_SUPPLY = 2_000_000 ether;
 
     /// @notice Flag indicating whether minting is permanently disabled
     bool public mintingFinished = false;
