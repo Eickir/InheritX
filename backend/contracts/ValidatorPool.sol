@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title ValidatorPool
@@ -11,7 +12,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * Users must stake at least a minimum amount of tokens to be considered validators.
  * They can also withdraw their staked tokens and leave the pool.
  */
-contract ValidatorPool is Ownable {
+contract ValidatorPool is Ownable, ReentrancyGuard {
     
     /// @notice The ERC20 token used for staking.
     IERC20 public stakingToken;
@@ -61,8 +62,13 @@ contract ValidatorPool is Ownable {
 
     // Custom errors 
 
+    /// @notice Thrown when the staked amount is below the minimum required
     error DepositBelowMinimumRequired();
+
+    /// @notice Thrown when a user tries to stake while already a validator
     error ValidatorAlreadyInPool();
+
+    /// @notice Thrown when a user tries to withdraw without having tokens staked
     error NoTokensToWithdraw();
 
     /**
@@ -99,8 +105,9 @@ contract ValidatorPool is Ownable {
     /**
      * @notice Withdraw staked tokens and leave the validator pool.
      * @dev Transfers all staked tokens from the contract to the caller. Reverts if the caller has no tokens staked.
+     * Uses a reentrancy guard to protect against reentrancy attacks.
      */
-    function withdraw() external {
+    function withdraw() external nonReentrant {
         uint256 amount = stakes[msg.sender];
         require(amount > 0, NoTokensToWithdraw());
 

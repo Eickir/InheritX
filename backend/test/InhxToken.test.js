@@ -27,13 +27,13 @@ describe("InhxToken Tests", function () {
   });
 
   it("should revert mint that exceeds MAX_SUPPLY", async function () {
-    // The initial supply equals MAX_SUPPLY, so any further mint should revert
+    // The initial supply equals MAX_SUPPLY, so any further mint should revert with custom error MaxSupplyReached
     await expect(inhxToken.mint(owner.address, ethers.parseEther("1")))
-      .to.be.revertedWith("Max supply reached");
+      .to.be.revertedWithCustomError(inhxToken, "MaxSupplyReached");
   });
 
   it("should allow token transfers when unpaused", async function () {
-    // By default the contract is unpaused (unless _pause() is called in the constructor)
+    // By default the contract is unpaused
     await inhxToken.transfer(addr1.address, ethers.parseEther("10"));
     expect(await inhxToken.balanceOf(addr1.address)).to.equal(ethers.parseEther("10"));
   });
@@ -43,13 +43,12 @@ describe("InhxToken Tests", function () {
     await inhxToken.pause();
     await expect(
       inhxToken.transfer(addr1.address, ethers.parseEther("10"))
-    ).to.be.revertedWithCustomError(inhxToken, "EnforcedPause")
+    ).to.be.revertedWithCustomError(inhxToken, "EnforcedPause");
   });
 
   it("should allow transfers after unpausing", async function () {
-    // Pause the contract...
+    // Pause the contract then unpause it
     await inhxToken.pause();
-    // ... then unpause it
     await inhxToken.unpause();
     await inhxToken.transfer(addr1.address, ethers.parseEther("10"));
     expect(await inhxToken.balanceOf(addr1.address)).to.equal(ethers.parseEther("10"));
@@ -66,5 +65,32 @@ describe("InhxToken Tests", function () {
     await expect(
       inhxToken.connect(addr1).unpause()
     ).to.be.revertedWithCustomError(inhxToken, "OwnableUnauthorizedAccount");
+  });
+
+  // Tests for finishMinting functionality
+  it("should allow the owner to finish minting", async function () {
+    await inhxToken.finishMinting();
+    // After finishMinting, any attempt to mint should revert with custom error MintingFinished
+    await expect(
+      inhxToken.mint(owner.address, ethers.parseEther("1"))
+    ).to.be.revertedWithCustomError(inhxToken, "MintingFinished");
+  });
+
+  it("should revert finishMinting when called by a non-owner", async function () {
+    await expect(
+      inhxToken.connect(addr1).finishMinting()
+    ).to.be.revertedWithCustomError(inhxToken, "OwnableUnauthorizedAccount");
+  });
+
+  it("should revert direct Ether transfers with EtherNotAccepted error", async function () {
+    await expect(
+      owner.sendTransaction({ to: inhxToken.target, value: ethers.parseEther("1") })
+    ).to.be.reverted;
+  });
+
+  it("should revert calls to non-existent functions with EtherNotAccepted error", async function () {
+    await expect(
+      owner.sendTransaction({ to: inhxToken.target, data: "0x12345678" })
+    ).to.be.reverted;
   });
 });

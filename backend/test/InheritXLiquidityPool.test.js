@@ -263,4 +263,21 @@ describe("InheritXLiquidityPool Tests with Real Uniswap Contracts", function () 
         .withArgs(ethers.ZeroAddress);
     });
   });
+
+  describe("Ether contract interaction", function() {
+    it("should revert direct Ether transfers with EtherNotAccepted error", async function () {
+      const { pool, inhxToken, user, owner } = await loadFixture(deployContractsFixture);
+      await expect(
+        user.sendTransaction({ to: pool.target, value: ethers.parseEther("1") })
+      ).to.be.revertedWithCustomError(inhxToken, "EtherNotAccepted");      
+    });
+
+    it("should revert calls to non-existent functions with EtherNotAccepted error", async function () {
+      const { pool, inhxToken, user, owner } = await loadFixture(deployContractsFixture);
+      await expect(
+        user.sendTransaction({ to: pool.target, data: "0x12345678" })
+      ).to.be.revertedWithCustomError(inhxToken, "EtherNotAccepted");
+    });
+  });
+
 });

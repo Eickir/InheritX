@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -32,7 +33,7 @@ interface IERC20Metadata is IERC20 {
  * It allows the owner to approve the router for token spending, add liquidity,
  * execute token swaps between two tokens, and retrieve pool reserves.
  */
-contract InheritXLiquidityPool is Ownable {
+contract InheritXLiquidityPool is Ownable, ReentrancyGuard {
 
     /// @notice Address of token A used in the liquidity pool.
     address public tokenA; 
@@ -61,6 +62,9 @@ contract InheritXLiquidityPool is Ownable {
      * @notice Thrown when the Uniswap pair does not exist.
      */
     error PairDoesNotExist();
+
+    /// @notice Error thrown when the contract receives Ether
+    error EtherNotAccepted();
 
     /**
      * @notice Constructor to initialize the liquidity pool contract.
@@ -145,7 +149,7 @@ contract InheritXLiquidityPool is Ownable {
         uint amountIn,
         uint amountOutMin,
         uint deadline
-    ) external {
+    ) external nonReentrant {
         
         uint256 balanceBefore = IERC20Metadata(tokenB).balanceOf(msg.sender);
 
@@ -190,7 +194,7 @@ contract InheritXLiquidityPool is Ownable {
         uint amountIn,
         uint amountOutMin,
         uint deadline
-    ) external {
+    ) external nonReentrant {
 
         uint256 balanceBefore = IERC20Metadata(tokenA).balanceOf(msg.sender);
 
@@ -237,5 +241,21 @@ contract InheritXLiquidityPool is Ownable {
 
         // Return reserves in tokenA/tokenB order.
         (reserveA, reserveB) = tokenA < tokenB ? (reserve0, reserve1) : (reserve1, reserve0);
+    }
+
+    /**
+     * @notice Reverts any direct Ether transfers to the contract.
+     * @dev This function is triggered when the contract receives Ether with empty calldata.
+     */
+    receive() external payable {
+        revert EtherNotAccepted();
+    }
+
+    /**
+     * @notice Reverts any calls to non-existent functions or direct Ether transfers with calldata.
+     * @dev This function is triggered when no other function matches the call data.
+     */
+    fallback() external payable {
+        revert EtherNotAccepted();
     }
 }

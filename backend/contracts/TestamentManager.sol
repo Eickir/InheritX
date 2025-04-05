@@ -341,4 +341,5 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
         require(ownerOf(tokenId) == msg.sender, NotAuthorized());
         _burn(tokenId);
     }
+
 }
