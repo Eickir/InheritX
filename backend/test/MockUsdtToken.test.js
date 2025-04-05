@@ -5,8 +5,8 @@ const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helper
 describe("musdtToken Tests", function () {
   let musdtToken;
   let owner, addr1;
-  // The initial supply minted to the owner is 1,000,000 tokens (in wei)
-  const initialSupplyMusdt = ethers.parseEther("1000000");
+  // The initial supply minted to the owner is 2,000,000 tokens (in wei)
+  const initialSupplyMusdt = ethers.parseEther("2000000");
 
   beforeEach(async () => {
     [owner, addr1] = await ethers.getSigners();
