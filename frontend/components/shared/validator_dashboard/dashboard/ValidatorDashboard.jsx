@@ -47,6 +47,8 @@ export default function ValidatorDashboard() {
   const [musdtBalance, setMusdtBalance] = useState(null);
   const [pendingActionHash, setPendingActionHash] = useState(null);
   const stakeAmountRef = useRef(null); 
+  const lastBlockRef = useRef(22123608);
+
 
   const { data: userStake } = useReadContract({
     address: validatorPoolAddress,
@@ -180,168 +182,191 @@ export default function ValidatorDashboard() {
 
   const getEvents = async () => {
     try {
-      const [
-        deposits,
-        swap, 
-        approvals,
-        rejections,
-        tokensStaked,
-        tokensWithdrawn,
-        addedToPool,
-        removedFromPool,
-        minStakeUpdated,
-      ] = await Promise.all([
-        publicClient.getLogs({
+      const fromBlock = BigInt(lastBlockRef.current + 1);
+
+      const eventsToWatch = [
+        {
+          type: "TestamentDeposited",
           address: testamentManagerAddress,
-          event: parseAbiItem("event TestamentDeposited(address indexed _depositor, string _cid)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TestamentDeposited(address indexed _depositor, string _cid)",
+          format: (log) => ({
+            type: "TestamentDeposited",
+            _depositor: log.args._depositor,
+            _cid: log.args._cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "SwapToken",
           address: poolAddress,
-          event: parseAbiItem("event TokenSwapped(string _tokenSent, string _tokenReceived, uint256 _balanceBeforeTokenReceived, uint256 _balanceAfterTokenReceived)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TokenSwapped(string _tokenSent, string _tokenReceived, uint256 _balanceBeforeTokenReceived, uint256 _balanceAfterTokenReceived)",
+          format: (log) => ({
+            type: "SwapToken",
+            _tokenSent: log.args._tokenSent,
+            _tokenReceived: log.args._tokenReceived,
+            _balanceBeforeTokenReceived: log.args._balanceBeforeTokenReceived,
+            _balanceAfterTokenReceived: log.args._balanceAfterTokenReceived,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "TestamentApproved",
           address: testamentManagerAddress,
-          event: parseAbiItem("event TestamentApproved(address indexed _depositor, string _cid)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TestamentApproved(address indexed _depositor, string _cid)",
+          format: (log) => ({
+            type: "TestamentApproved",
+            _depositor: log.args._depositor,
+            _cid: log.args._cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "TestamentRejected",
           address: testamentManagerAddress,
-          event: parseAbiItem("event TestamentRejected(address indexed _depositor, string _cid)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TestamentRejected(address indexed _depositor, string _cid)",
+          format: (log) => ({
+            type: "TestamentRejected",
+            _depositor: log.args._depositor,
+            _cid: log.args._cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "TestamentOutdated",
+          address: testamentManagerAddress,
+          abi: "event TestamentOutdated(address indexed _depositor, string _cid)",
+          format: (log) => ({
+            type: "TestamentOutdated",
+            _depositor: log.args._depositor,
+            _cid: log.args._cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "TokensStaked",
           address: validatorPoolAddress,
-          event: parseAbiItem("event TokensStaked(address indexed user, uint256 amount)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TokensStaked(address indexed user, uint256 amount)",
+          format: (log) => ({
+            type: "TokensStaked",
+            user: log.args.user,
+            amount: log.args.amount,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "TokensWithdrawn",
           address: validatorPoolAddress,
-          event: parseAbiItem("event TokensWithdrawn(address indexed user, uint256 amount)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event TokensWithdrawn(address indexed user, uint256 amount)",
+          format: (log) => ({
+            type: "TokensWithdrawn",
+            user: log.args.user,
+            amount: log.args.amount,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "AddedToPool",
           address: validatorPoolAddress,
-          event: parseAbiItem("event AddedToPool(address indexed user)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event AddedToPool(address indexed user)",
+          format: (log) => ({
+            type: "AddedToPool",
+            user: log.args.user,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "RemovedFromPool",
           address: validatorPoolAddress,
-          event: parseAbiItem("event RemovedFromPool(address indexed user)"),
-          fromBlock: 22123608n,
-        }),
-        publicClient.getLogs({
+          abi: "event RemovedFromPool(address indexed user)",
+          format: (log) => ({
+            type: "RemovedFromPool",
+            user: log.args.user,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
+          type: "MinStakeUpdated",
           address: validatorPoolAddress,
-          event: parseAbiItem("event MinStakeUpdated(uint256 newMinStake)"),
-          fromBlock: 22123608n,
-        }),
-      ]);
-
-      const depositEvents = deposits.map((log) => ({
-        type: "TestamentDeposited",
-        _depositor: log.args._depositor,
-        _cid: log.args._cid,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const formattedSwapLogs = swap.map((log) => ({
-        type: "SwapToken",
-        _tokenSent: log.args._tokenSent,
-        _tokenReceived: log.args._tokenReceived,
-        _balanceBeforeTokenReceived: log.args._balanceBeforeTokenReceived,
-        _balanceAfterTokenReceived: log.args._balanceAfterTokenReceived,
-        transactionHash: log.transactionHash,
-        blockNumber: log.blockNumber.toString(),
-      }));
-      const approvalEvents = approvals.map((log) => ({
-        type: "TestamentApproved",
-        _depositor: log.args._depositor,
-        _cid: log.args._cid,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const rejectionEvents = rejections.map((log) => ({
-        type: "TestamentRejected",
-        _depositor: log.args._depositor,
-        _cid: log.args._cid,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const tokensStakedEvents = tokensStaked.map((log) => ({
-        type: "TokensStaked",
-        user: log.args.user,
-        amount: log.args.amount,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const tokensWithdrawnEvents = tokensWithdrawn.map((log) => ({
-        type: "TokensWithdrawn",
-        user: log.args.user,
-        amount: log.args.amount,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const addedToPoolEvents = addedToPool.map((log) => ({
-        type: "AddedToPool",
-        user: log.args.user,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const removedFromPoolEvents = removedFromPool.map((log) => ({
-        type: "RemovedFromPool",
-        user: log.args.user,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-      const minStakeUpdatedEvents = minStakeUpdated.map((log) => ({
-        type: "MinStakeUpdated",
-        newMinStake: log.args.newMinStake,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-      }));
-
-      const allEvents = [
-        ...depositEvents,
-        ...formattedSwapLogs, 
-        ...approvalEvents,
-        ...rejectionEvents,
-        ...tokensStakedEvents,
-        ...tokensWithdrawnEvents,
-        ...addedToPoolEvents,
-        ...removedFromPoolEvents,
-        ...minStakeUpdatedEvents,
+          abi: "event MinStakeUpdated(uint256 newMinStake)",
+          format: (log) => ({
+            type: "MinStakeUpdated",
+            newMinStake: log.args.newMinStake,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
       ];
 
-      allEvents.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
-      setEvents(allEvents);
+      let allNewEvents = [];
 
-      const approvedCIDs = new Set(approvalEvents.map((e) => e._cid));
-      const rejectedCIDs = new Set(rejectionEvents.map((e) => e._cid));
-      const latestByDepositor = new Map();
-      deposits.forEach((log) => {
-        const depositor = log.args._depositor;
-        const cid = log.args._cid;
-        const bn = Number(log.blockNumber);
-        if (!latestByDepositor.has(depositor) || latestByDepositor.get(depositor).blockNumber < bn) {
-          latestByDepositor.set(depositor, { cid, depositor, blockNumber: bn });
-        }
-      });
-      const pending = Array.from(latestByDepositor.values()).filter(
-        (t) => !approvedCIDs.has(t.cid) && !rejectedCIDs.has(t.cid)
-      );
-      setPendingTestaments(pending);
-      setCheckedCount(approvedCIDs.size + rejectedCIDs.size);
-      setRejectedRatio(
-        approvedCIDs.size + rejectedCIDs.size > 0
-          ? `${Math.round((rejectedCIDs.size / (approvedCIDs.size + rejectedCIDs.size)) * 100)}%`
-          : "0%"
-      );
-      setStakedAmount(userStake ? userStake.toString() : "0");
+      for (const event of eventsToWatch) {
+        const logs = await publicClient.getLogs({
+          address: event.address,
+          event: parseAbiItem(event.abi),
+          fromBlock,
+          toBlock: "latest",
+        });
+
+        const formatted = logs.map(event.format);
+        allNewEvents = [...allNewEvents, ...formatted];
+      }
+
+      if (allNewEvents.length > 0) {
+        const maxBlock = Math.max(...allNewEvents.map((e) => Number(e.blockNumber)));
+        lastBlockRef.current = maxBlock;
+
+        setEvents((prev) => {
+          const combined = [
+            ...prev,
+            ...allNewEvents.filter((e) => !prev.some((p) => p.transactionHash === e.transactionHash)),
+          ];
+          return combined.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+        });
+
+        const deposits = allNewEvents.filter((e) => e.type === "TestamentDeposited");
+        const approvalEvents = allNewEvents.filter((e) => e.type === "TestamentApproved");
+        const rejectionEvents = allNewEvents.filter((e) => e.type === "TestamentRejected");
+
+        const approvedCIDs = new Set(approvalEvents.map((e) => e._cid));
+        const rejectedCIDs = new Set(rejectionEvents.map((e) => e._cid));
+        const latestByDepositor = new Map();
+
+        deposits.forEach((log) => {
+          const depositor = log._depositor;
+          const cid = log._cid;
+          const bn = Number(log.blockNumber);
+          if (!latestByDepositor.has(depositor) || latestByDepositor.get(depositor).blockNumber < bn) {
+            latestByDepositor.set(depositor, { cid, depositor, blockNumber: bn });
+          }
+        });
+
+        const pending = Array.from(latestByDepositor.values()).filter(
+          (t) => !approvedCIDs.has(t.cid) && !rejectedCIDs.has(t.cid)
+        );
+
+        setPendingTestaments(pending);
+        setCheckedCount(approvedCIDs.size + rejectedCIDs.size);
+        setRejectedRatio(
+          approvedCIDs.size + rejectedCIDs.size > 0
+            ? `${Math.round((rejectedCIDs.size / (approvedCIDs.size + rejectedCIDs.size)) * 100)}%`
+            : "0%"
+        );
+        setStakedAmount("0"); // à override avec vrai stake plus tard
+      }
     } catch (error) {
-      console.error("Erreur lors du rafraîchissement des données :", error);
+      console.error("Erreur lors de la récupération des événements:", error);
     }
   };
+
 
   const decryptFile = (encryptedData, secretKey) => {
     try {
@@ -388,7 +413,7 @@ export default function ValidatorDashboard() {
         address: testamentManagerAddress,
         abi: testamentManagerABI,
         functionName: "getDecryptedKey",
-        args: [address, testament.cid],
+        args: [testament.cid],
         account: address,
       });
       if (!keyFromChain) {
@@ -417,7 +442,7 @@ export default function ValidatorDashboard() {
         address: testamentManagerAddress,
         abi: testamentManagerABI,
         functionName: "approveTestament",
-        args: [address, currentTestamentRef.current.depositor],
+        args: [currentTestamentRef.current.depositor],
         account: address,
       });
     } catch (err) {
@@ -444,7 +469,7 @@ export default function ValidatorDashboard() {
         address: testamentManagerAddress,
         abi: testamentManagerABI,
         functionName: "rejectTestament",
-        args: [address, currentTestamentRef.current.depositor],
+        args: [currentTestamentRef.current.depositor],
         account: address,
       });
     } catch (err) {

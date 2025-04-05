@@ -1,32 +1,45 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-const COLORS = ["#8884d8", "#82ca9d", "#ff6961", "#ffa500"];
-
 const STATUS_LABELS = {
-  TestamentDeposited: "Déposé",
+  TestamentDeposited: "En attente",
   TestamentApproved: "Approuvé",
   TestamentRejected: "Rejeté",
   TestamentOutdated: "Obsolète",
 };
 
+const STATUS_COLORS = {
+  TestamentDeposited: "#ECC94B",   // Jaune
+  TestamentApproved: "#38A169",    // Vert
+  TestamentRejected: "#E53E3E",    // Rouge
+  TestamentOutdated: "#A0AEC0",    // Gris
+};
+
 export default function ResponsivePieChart({ events, address }) {
-  const countByStatus = () => {
-    const statuses = Object.keys(STATUS_LABELS);
-    const countMap = Object.fromEntries(statuses.map((status) => [status, 0]));
+  const computeLatestStatuses = () => {
+    const latestStatusByCID = {};
 
-    events.forEach((event) => {
-      if (event._depositor === address && countMap.hasOwnProperty(event.type)) {
-        countMap[event.type]++;
-      }
-    });
+    events
+      .filter((event) => event._depositor === address)
+      .sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber)) // du plus récent au plus ancien
+      .forEach((event) => {
+        if (!latestStatusByCID[event.cid]) {
+          latestStatusByCID[event.cid] = event.type;
+        }
+      });
 
-    return Object.entries(countMap).map(([key, value]) => ({
-      name: STATUS_LABELS[key] || key,
+    const countMap = Object.values(latestStatusByCID).reduce((acc, status) => {
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(countMap).map(([type, value]) => ({
+      name: STATUS_LABELS[type] || type,
       value,
+      color: STATUS_COLORS[type] || "#000000", // fallback noir
     }));
   };
 
-  const data = countByStatus();
+  const data = computeLatestStatuses();
 
   return (
     <div className="w-full h-[300px]">
@@ -44,7 +57,7 @@ export default function ResponsivePieChart({ events, address }) {
             isAnimationActive={true}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
           <Tooltip formatter={(value) => `${value} testaments`} />

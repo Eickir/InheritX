@@ -205,7 +205,7 @@ function DepositTestamentFormInternal({ address, isConnected, onDepositSuccess, 
       setProgress((p) => ({ ...p, contractDone: true }));
       setStatusMessage({ type: "success", text: "Testament déposé avec succès !" });
       setUploading(false);
-      onDepositSuccess?.();
+      onDepositSuccess?.(depositTxData);
     }
   }, [isDepositSuccess, depositHandled, onDepositSuccess]);
 

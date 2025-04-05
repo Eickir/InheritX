@@ -24,8 +24,15 @@ const statusColors = {
 
 const validityColors = {
   Active: "bg-green-100 text-green-800",
-  Inactive: "bg-red-100 text-red-800",
+  Inactive: "bg-gray-100 text-gray-800",
   Outdated: "bg-gray-100 text-gray-800",
+};
+
+const statusPriority = {
+  TestamentApproved: 3,
+  TestamentRejected: 2,
+  TestamentOutdated: 1,
+  TestamentDeposited: 0,
 };
 
 export default function TestamentStatusTable({ events, address }) {
@@ -56,14 +63,20 @@ export default function TestamentStatusTable({ events, address }) {
       const firstEvent = sorted[0];
       const lastEvent = sorted[sorted.length - 1];
 
-      const status = statusMapping[lastEvent.type] || lastEvent.type;
-      const validity = validityMapping[lastEvent.type] || "Unknown";
+      const dominantEvent = sorted.reduce((prev, current) => {
+        const prevScore = statusPriority[prev.type] ?? -1;
+        const currentScore = statusPriority[current.type] ?? -1;
+        return currentScore > prevScore ? current : prev;
+      }, sorted[0]);
+
+      const status = statusMapping[dominantEvent.type] || dominantEvent.type;
+      const validity = validityMapping[dominantEvent.type] || "Unknown";
 
       result.push({
         cid,
         first_state_timestamp: firstEvent.timestamp,
         last_state_timestamp: lastEvent.timestamp,
-        rawStatus: lastEvent.type,
+        rawStatus: dominantEvent.type,
         status,
         validity,
       });
@@ -76,56 +89,56 @@ export default function TestamentStatusTable({ events, address }) {
 
   return (
     <>
-        {testaments.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="py-2">CID</th>
-                <th className="py-2">Déposé le</th>
-                <th className="py-2">Dernier état</th>
-                <th className="py-2">Validité</th>
-                <th className="py-2">Statut</th>
+      {testaments.length > 0 ? (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left border-b">
+              <th className="py-2">CID</th>
+              <th className="py-2">Déposé le</th>
+              <th className="py-2">Dernier état</th>
+              <th className="py-2">Validité</th>
+              <th className="py-2">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {testaments.map((t) => (
+              <tr key={`${t.cid}-${t.last_state_timestamp}`} className="border-b">
+                <td className="py-2 break-all">{t.cid}</td>
+                <td className="py-2">
+                  {t.first_state_timestamp
+                    ? new Date(t.first_state_timestamp * 1000).toLocaleString()
+                    : "N/A"}
+                </td>
+                <td className="py-2">
+                  {t.last_state_timestamp
+                    ? new Date(t.last_state_timestamp * 1000).toLocaleString()
+                    : "N/A"}
+                </td>
+                <td className="py-2">
+                  <span
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      validityColors[t.validity] || "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {t.validity}
+                  </span>
+                </td>
+                <td className="py-2">
+                  <span
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      statusColors[t.status] || "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {t.status}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {testaments.map((t) => (
-                <tr key={`${t.cid}-${t.last_state_timestamp}`} className="border-b">
-                  <td className="py-2 break-all">{t.cid}</td>
-                  <td className="py-2">
-                    {t.first_state_timestamp
-                      ? new Date(t.first_state_timestamp * 1000).toLocaleString()
-                      : "N/A"}
-                  </td>
-                  <td className="py-2">
-                    {t.last_state_timestamp
-                      ? new Date(t.last_state_timestamp * 1000).toLocaleString()
-                      : "N/A"}
-                  </td>
-                  <td className="py-2">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        validityColors[t.validity] || "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {t.validity}
-                    </span>
-                  </td>
-                  <td className="py-2">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        statusColors[t.status] || "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {t.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-sm text-gray-500">Aucun testament trouvé.</p>
-        )}
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="text-sm text-gray-500">Aucun testament trouvé.</p>
+      )}
     </>
   );
 }

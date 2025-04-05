@@ -24,7 +24,7 @@ export default function DecryptionSection({ address }) {
         abi: testamentManagerABI,
         account: accountAddress,
         functionName: "getDecryptedKey",
-        args: [accountAddress, cidInput],
+        args: [cidInput],
       });
 
       if (!decryptionKey) {

@@ -41,6 +41,7 @@ export default function SwapComponent({ onTransactionSuccess }) {
   const { data: balanceMUSDT, refetch: refetchMUSDTBalance } = useReadContract({
     address: musdtAddress,
     abi: musdtABI,
+    account: address, 
     functionName: "balanceOf",
     args: [address],
   });
@@ -48,6 +49,7 @@ export default function SwapComponent({ onTransactionSuccess }) {
   const { data: balanceINHX, refetch: refetchINHXBalance } = useReadContract({
     address: inhxAddress,
     abi: inhxABI,
+    account: address, 
     functionName: "balanceOf",
     args: [address],
   });
