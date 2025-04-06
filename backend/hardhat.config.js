@@ -16,6 +16,17 @@ module.exports = {
         enabled: true, 
         blockNumber: 22123608
       }
+    }, 
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL,
+      chainId: 11155111,
+      accounts: [`0x${process.env.PRIVATE_KEY}`]
     }
+  },
+  gasReporter: {
+    enabled: true,
+  }, 
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   }
 };
