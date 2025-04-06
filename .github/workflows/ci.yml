@@ -31,4 +31,4 @@ jobs:
         run: echo "MAINNET_RPC_URL=${{ secrets.MAINNET_RPC_URL }}" >> .env
 
       - name: Run Hardhat tests
-        run: npx hardhat test
+        run: npx hardhat test --network hardhat

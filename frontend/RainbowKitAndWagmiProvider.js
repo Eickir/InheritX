@@ -5,24 +5,18 @@ import {
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-  hardhat
-} from 'wagmi/chains';
+import {hardhat} from 'wagmi/chains';
 import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { sepolia } from '@/utils/sepolia';
 
 
 const config = getDefaultConfig({
     appName: 'InheritX Dapp',
     projectId: '05a5439a30a2c42f2d89eff73a602733',
-    chains: [mainnet, polygon, optimism, arbitrum, base, hardhat],
+    chains: [sepolia, hardhat],
     ssr: true, // If your dApp uses server side rendering (SSR)
   });
 

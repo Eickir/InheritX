@@ -132,7 +132,7 @@ contract InheritXLiquidityPool is Ownable, ReentrancyGuard {
             amountBDesired,
             amountAMin,
             amountBMin,
-            msg.sender,
+            address(this),
             block.timestamp + 600
         );
     }

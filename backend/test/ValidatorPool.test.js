@@ -40,6 +40,16 @@ describe("ValidatorPool", function () {
       expect(stake).to.equal(stakeAmount);
     });
 
+    it("should not emit AddedToPool if stake is more than minStakeAmount", async function () {
+      const amount = ethers.parseEther("6000");
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+
+      await expect(validatorPool.connect(user1).stake(amount))
+        .to.emit(validatorPool, "TokensStaked")
+        .withArgs(user1.address, amount)
+        .and.to.not.emit(validatorPool, "AddedToPool");
+    });
+
     it("should not emit AddedToPool if stake > minStakeAmount", async function () {
       const overStake = ethers.parseEther("6000");
     
@@ -75,6 +85,23 @@ describe("ValidatorPool", function () {
         "ValidatorAlreadyInPool"
       );
     });
+
+    it("should emit AddedToPool when stake equals minStakeAmount", async function () {
+      const amount = ethers.parseEther("5000");
+
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await expect(validatorPool.connect(user1).stake(amount))
+        .to.emit(validatorPool, "AddedToPool")
+        .withArgs(user1.address);
+    });
+
+    it("should not allow staking without prior approval", async function () {
+      const amount = ethers.parseEther("5000");
+      await expect(
+        validatorPool.connect(user1).stake(amount)
+      ).to.be.reverted; 
+    });
+
   });
 
   describe("Withdraw", function () {
@@ -96,12 +123,58 @@ describe("ValidatorPool", function () {
       expect(isVal).to.equal(false);
     });
 
+    it("should pass require check and withdraw if user has staked tokens", async function () {
+      const amount = ethers.parseEther("5000");
+
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await validatorPool.connect(user1).stake(amount);
+
+      await expect(validatorPool.connect(user1).withdraw())
+        .to.emit(validatorPool, "TokensWithdrawn");
+    });
+
+
     it("should revert withdraw if user has no inhxTokens", async function () {
       await expect(validatorPool.connect(user1).withdraw()).to.be.revertedWithCustomError(
         validatorPool,
         "NoTokensToWithdraw"
       );
     });
+
+    it("should reset stake to zero after withdraw", async function () {
+      const amount = ethers.parseEther("5000");
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await validatorPool.connect(user1).stake(amount);
+
+      await validatorPool.connect(user1).withdraw();
+      const stake = await validatorPool.stakes(user1.address);
+      expect(stake).to.equal(0);
+    });
+
+    it("should emit both TokensWithdrawn and RemovedFromPool", async function () {
+      const amount = ethers.parseEther("5000");
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await validatorPool.connect(user1).stake(amount);
+
+      await expect(validatorPool.connect(user1).withdraw())
+        .to.emit(validatorPool, "TokensWithdrawn")
+        .withArgs(user1.address, amount)
+        .and.to.emit(validatorPool, "RemovedFromPool")
+        .withArgs(user1.address);
+    });
+
+    it("should reduce contract balance after withdraw", async function () {
+      const amount = ethers.parseEther("5000");
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await validatorPool.connect(user1).stake(amount);
+
+      const contractBalanceBefore = await inhxToken.balanceOf(validatorPool.target);
+      await validatorPool.connect(user1).withdraw();
+      const contractBalanceAfter = await inhxToken.balanceOf(validatorPool.target);
+      expect(contractBalanceAfter).to.be.lt(contractBalanceBefore);
+    });
+
+
   });
 
   describe("Admin Functions", function () {
@@ -118,5 +191,48 @@ describe("ValidatorPool", function () {
       const newMin = ethers.parseEther("300");
       await expect(validatorPool.connect(user1).updateMinStakeAmount(newMin)).to.be.revertedWithCustomError(validatorPool, "OwnableUnauthorizedAccount").withArgs(user1.address);
     });
+
+    it("should allow setting same minStake again", async function () {
+      await expect(
+        validatorPool.connect(owner).updateMinStakeAmount(minStake)
+      ).to.emit(validatorPool, "MinStakeUpdated")
+        .withArgs(minStake);
+    });
+
+    it("should allow setting minStake to zero (if allowed)", async function () {
+      const zeroStake = ethers.parseEther("0");
+      await expect(
+        validatorPool.connect(owner).updateMinStakeAmount(zeroStake)
+      ).to.emit(validatorPool, "MinStakeUpdated")
+        .withArgs(zeroStake);
+    });
+
+    it("should update minStakeAmount correctly and emit event", async function () {
+      const newMinStake = ethers.parseEther("7500");
+      await expect(validatorPool.connect(owner).updateMinStakeAmount(newMinStake))
+        .to.emit(validatorPool, "MinStakeUpdated")
+        .withArgs(newMinStake);
+
+      const currentMin = await validatorPool.minStakeAmount();
+      expect(currentMin).to.equal(newMinStake); 
+    });
   });
+
+  describe("isAuthorized", function () {
+    it("should return false for non-validator", async function () {
+      const isVal = await validatorPool.isAuthorized(user1.address);
+      expect(isVal).to.equal(false);
+    });
+
+    it("should return true for validator", async function () {
+      const amount = ethers.parseEther("5000");
+      await inhxToken.connect(user1).approve(validatorPool.target, amount);
+      await validatorPool.connect(user1).stake(amount);
+
+      const isVal = await validatorPool.isAuthorized(user1.address);
+      expect(isVal).to.equal(true);
+    });
+  });
+
+
 });

@@ -14,31 +14,25 @@ import {
   musdtAddress,
   inhxABI,
   inhxAddress,
+  routerABI, 
+  routerAddress
 } from "@/constants";
 
 export default function SwapComponent({ onTransactionSuccess }) {
   const { address } = useAccount();
-  const { writeContract } = useWriteContract();
+  const decimals = 18;
 
   const [inputAmount, setInputAmount] = useState("0");
   const [isMUSDTToINHX, setIsMUSDTToINHX] = useState(true);
   const [loading, setLoading] = useState(false);
   const [estimatedAmountOut, setEstimatedAmountOut] = useState("0");
   const [minimumReceived, setMinimumReceived] = useState("0");
-  const [slippage, setSlippage] = useState(0.5); // Slippage slider
+  const [slippage, setSlippage] = useState(0.5);
+  const [approveHash, setApproveHash] = useState(null);
+  const [swapHash, setSwapHash] = useState(null);
 
-  const decimals = 18;
-
-  const {
-    data: writeApprove,
-    writeContract: writeApproveFunction,
-  } = useWriteContract();
-
-  const {
-    data: writeSwap,
-    isSuccess: isWriteSuccess,
-    writeContract: writeSwapFunction,
-  } = useWriteContract();
+  const { data: writeApproveData, writeContract: writeApproveFunction } = useWriteContract();
+  const { data: writeSwapData, writeContract: writeSwapFunction } = useWriteContract();
 
   const { data: balanceMUSDT, refetch: refetchMUSDTBalance } = useReadContract({
     address: musdtAddress,
@@ -62,19 +56,38 @@ export default function SwapComponent({ onTransactionSuccess }) {
     functionName: "getReserves",
   });
 
-  const { isSuccess } = useWaitForTransactionReceipt({
-    hash: writeSwap,
+  const { isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  });
+
+  const { isSuccess: isSwapConfirmed } = useWaitForTransactionReceipt({
+    hash: swapHash,
   });
 
   useEffect(() => {
-    if (writeSwap && isSuccess) {
+    if (writeApproveData) {
+      console.log("✅ Approve tx envoyée. Hash:", writeApproveData);
+      setApproveHash(writeApproveData);
+    }
+  }, [writeApproveData]);
+
+  useEffect(() => {
+    if (isApproveConfirmed && approveHash) {
+      console.log("✅ Approve confirmée. Lancement du swap...");
+      handleSwap();
+    }
+  }, [isApproveConfirmed, approveHash]);
+
+  useEffect(() => {
+    if (isSwapConfirmed && swapHash) {
+      console.log("✅ Swap confirmé !");
+      setSwapHash(null);
+      setLoading(false);
       refetchINHXBalance();
       refetchMUSDTBalance();
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
+      onTransactionSuccess?.();
     }
-  }, [writeSwap, isSuccess]);
+  }, [isSwapConfirmed, swapHash]);
 
   const getTokenLabels = () =>
     isMUSDTToINHX ? { from: "MUSDT", to: "INHX" } : { from: "INHX", to: "MUSDT" };
@@ -116,7 +129,6 @@ export default function SwapComponent({ onTransactionSuccess }) {
 
       setEstimatedAmountOut(formattedOut);
 
-      // Calcul du minimum reçu
       const slippageMultiplier = (100 - slippage) / 100;
       const minOut = Number(formattedOut) * slippageMultiplier;
       setMinimumReceived(minOut.toFixed(6));
@@ -130,40 +142,64 @@ export default function SwapComponent({ onTransactionSuccess }) {
     try {
       setLoading(true);
       const amountIn = parseUnits(inputAmount, decimals);
-      const deadline = Math.floor(Date.now() / 1000) + 600;
-
       const tokenInAddress = isMUSDTToINHX ? musdtAddress : inhxAddress;
-      const swapFunction = isMUSDTToINHX
-        ? "swapTokenBForTokenA"
-        : "swapTokenAForTokenB";
 
       await writeApproveFunction({
         address: tokenInAddress,
         abi: isMUSDTToINHX ? musdtABI : inhxABI,
         functionName: "approve",
-        args: [poolAddress, amountIn],
+        args: [routerAddress, amountIn],
         account: address,
       });
 
-      const amountOut = parseUnits(estimatedAmountOut, decimals);
-      const slippageTolerance = BigInt(Math.floor((100 - slippage) * 1000));
-      const amountOutMin = (amountOut * slippageTolerance) / 100000n;
-
-      await writeSwapFunction({
-        address: poolAddress,
-        abi: poolABI,
-        functionName: swapFunction,
-        args: [amountIn, amountOutMin, deadline],
-        account: address,
-      });
-
-      setLoading(false);
+      // Approve hash will be tracked by useEffect above
     } catch (err) {
-      console.error("Swap failed:", err);
+      console.error("❌ Approve failed:", err);
+      alert("Approve failed: " + (err?.message || JSON.stringify(err)));
       setLoading(false);
     }
   };
 
+  const handleSwap = async () => {
+    try {
+      const amountIn = parseUnits(inputAmount, decimals);
+      const amountOut = parseUnits(estimatedAmountOut, decimals);
+      const deadline = Math.floor(Date.now() / 1000) + 600;
+  
+      const slippageTolerance = BigInt(Math.floor((100 - slippage) * 1000));
+      const amountOutMin = (amountOut * slippageTolerance) / 100000n;
+  
+      const path = isMUSDTToINHX
+        ? [musdtAddress, inhxAddress]
+        : [inhxAddress, musdtAddress];
+  
+      const tx = await writeSwapFunction({
+        address: routerAddress,
+        abi: routerABI,
+        functionName: "swapExactTokensForTokens",
+        args: [amountIn, amountOutMin, path, address, deadline],
+        account: address,
+      });
+  
+      console.log("✅ Swap tx envoyée. Hash:", tx);
+      setSwapHash(tx);
+    } catch (err) {
+      console.error("❌ Swap failed:", err);
+      alert("Swap failed: " + (err?.message || JSON.stringify(err)));
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (writeSwapData) {
+      console.log("✅ Swap tx envoyée. Hash:", writeSwapData);
+      setSwapHash(writeSwapData);
+    }
+  }, [writeSwapData]);
+  
+  
+  
+  
   return (
     <div className="p-6 bg-white rounded-xl shadow-md max-w-md mx-auto space-y-4">
       <h2 className="text-2xl font-bold text-center">
@@ -224,7 +260,7 @@ export default function SwapComponent({ onTransactionSuccess }) {
         disabled={loading || !inputAmount || Number(inputAmount) <= 0}
         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full font-bold"
       >
-        {loading ? "Swapping..." : `Swap ${from} ➔ ${to}`}
+        {loading ? "Processing..." : `Swap ${from} ➔ ${to}`}
       </button>
 
       <div className="text-xs text-gray-500 mt-4">
@@ -234,3 +270,5 @@ export default function SwapComponent({ onTransactionSuccess }) {
     </div>
   );
 }
+
+
