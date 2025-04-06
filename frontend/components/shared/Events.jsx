@@ -19,6 +19,7 @@ export default function EventLogList({ events }) {
       return (
         (event._depositor && event._depositor.toLowerCase().includes(term)) ||
         (event.user && event.user.toLowerCase().includes(term)) ||
+        (event.to && event.to.toLowerCase().includes(term)) ||
         (event.transactionHash && event.transactionHash.toLowerCase().includes(term))
       );
     }
@@ -43,16 +44,17 @@ export default function EventLogList({ events }) {
     AddedToPool: "Ajout au Pool",
     RemovedFromPool: "Retrait du Pool",
     MinStakeUpdated: "Min Stake Modifié",
+    TestamentMinted: "Testament Minté",
   };
 
   const exportToCSV = () => {
-    const headers = ["Type", "Depositor/User", "TransactionHash", "Block", "Date"];
+    const headers = ["Type", "Depositor/User/To", "TransactionHash", "Block", "Date"];
     const csvRows = [headers.join(",")];
 
     sortedEvents.forEach((event) => {
       const row = [
         event.type,
-        event._depositor || event.user || "",
+        event._depositor || event.user || event.to || "",
         event.transactionHash,
         event.blockNumber,
         event.timestamp
@@ -141,6 +143,22 @@ export default function EventLogList({ events }) {
                   {event.newMinStake && <p><span className="font-semibold">Min stake:</span> {event.newMinStake}</p>}
                   {event._tokenSent && (
                     <p><span className="font-semibold">Swap:</span> {event._tokenSent} → {event._tokenReceived}</p>
+                  )}
+                  {/* TestamentMinted-specific fields */}
+                  {event.to && <p><span className="font-semibold">To:</span> {event.to}</p>}
+                  {event.tokenId && <p><span className="font-semibold">Token ID:</span> {event.tokenId}</p>}
+                  {event.cid && (
+                    <p>
+                      <span className="font-semibold">CID:</span> {event.cid}{" "}
+                      <a
+                        href={`https://ipfs.io/ipfs/${event.cid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 underline ml-1"
+                      >
+                        (voir)
+                      </a>
+                    </p>
                   )}
                   {event.timestamp && (
                     <p>

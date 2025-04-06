@@ -153,6 +153,19 @@ export default function MesTestaments() {
           },
         },
         {
+          type: "TestamentMinted",
+          address: testamentManagerAddress,
+          abi: "event TestamentMinted(address indexed to, uint256 indexed tokenId, string cid)",
+          format: (log) => ({
+            type: "TestamentMinted",
+            to: log.args.to,
+            tokenId: log.args.tokenId,
+            cid: log.args.cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
           type: "TestamentOutdated",
           address: testamentManagerAddress,
           abi: "event TestamentOutdated(address indexed _depositor, string _cid)",

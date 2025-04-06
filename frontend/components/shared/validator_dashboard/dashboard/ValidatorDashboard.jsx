@@ -212,6 +212,19 @@ export default function ValidatorDashboard() {
           }),
         },
         {
+          type: "TestamentMinted",
+          address: testamentManagerAddress,
+          abi: "event TestamentMinted(address indexed to, uint256 indexed tokenId, string cid)",
+          format: (log) => ({
+            type: "TestamentMinted",
+            to: log.args.to,
+            tokenId: log.args.tokenId,
+            cid: log.args.cid,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber.toString(),
+          }),
+        },
+        {
           type: "TestamentApproved",
           address: testamentManagerAddress,
           abi: "event TestamentApproved(address indexed _depositor, string _cid)",
