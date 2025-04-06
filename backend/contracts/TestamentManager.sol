@@ -81,6 +81,11 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
      */
     mapping(uint256 => string) private encryptedKeys;
 
+    /**
+     * @notice Mapping from user to their last minted token ID
+     */
+    mapping(address => uint256) public lastMintedTokenId;
+
     // External contracts defined as immutable
 
     /**
@@ -268,6 +273,7 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
         string memory fullURI = string(abi.encodePacked(baseTokenURI, _cid));
         _setTokenURI(tokenId, fullURI);
         encryptedKeys[tokenId] = _decryptionKey;
+        lastMintedTokenId[to] = tokenId;
         emit TestamentMinted(to, tokenId, _cid);
     }
 
@@ -278,6 +284,20 @@ contract TestamentManager is ERC721, ERC721URIStorage, Ownable {
     function getTestament() external view returns (TestamentInfo memory) {
         return lastTestament[msg.sender];
     }
+
+    /**
+    * @notice Returns information about the last minted (approved) testament for the caller.
+    * @return tokenId The ID of the minted SBT.
+    * @return uri The full tokenURI pointing to the IPFS content.
+    */
+    function getMintedTestament() external view returns (uint256 tokenId, string memory uri)
+        {
+            require(lastMintedTokenId[msg.sender] != 0, NoTestamentFound());
+            uint256 id = lastMintedTokenId[msg.sender];
+
+            return (id, tokenURI(id));
+    }
+
 
     /**
      * @notice Returns the total number of testaments deposited by the caller.

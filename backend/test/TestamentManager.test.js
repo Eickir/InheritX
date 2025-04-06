@@ -314,7 +314,34 @@ describe("TestamentManager", function () {
         testamentManager.connect(user).setBaseTokenURI(newUri)
       ).to.be.revertedWithCustomError(testamentManager, "OwnableUnauthorizedAccount").withArgs(user.address);
     });
+  });
+
+  describe("getMintedTestament", function () {
+    it("should return minted testament data for approved user", async function () {
+      const { user, validator, testamentManager, baseTokenURI } = await loadFixture(deployAndDepositTestamentFixture);
+
+      const cid = "QmSampleTestament";
+      const decryptionKey = "sampleKey";
+      const amount = ethers.parseEther("100");
+
+      // Approve and mint the testament
+      await testamentManager.connect(validator).approveTestament(user.address);
+
+      const result = await testamentManager.connect(user).getMintedTestament();
+
+      expect(result.tokenId).to.equal(1n); // First minted token
+      expect(result.uri).to.equal(`${baseTokenURI}${cid}`);
+    });
+
+    it("should revert if user has not minted any testament", async function () {
+      const { otherUser, testamentManager } = await loadFixture(deployContractsFixture);
+
+      await expect(
+        testamentManager.connect(otherUser).getMintedTestament()
+      ).to.be.revertedWithCustomError(testamentManager, "NoTestamentFound");
+    });
 
   });
+
 
 });
