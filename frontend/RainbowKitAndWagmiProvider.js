@@ -5,14 +5,12 @@ import {
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import {
-  sepolia, 
-  hardhat
-} from 'wagmi/chains';
+import {hardhat} from 'wagmi/chains';
 import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { sepolia } from '@/utils/sepolia';
 
 
 const config = getDefaultConfig({

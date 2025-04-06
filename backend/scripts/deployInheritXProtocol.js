@@ -82,10 +82,6 @@ async function main() {
 
       // Définit un deadline (20 minutes à partir de maintenant)
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-      const liquidityOverrides = {
-        ...overrides,
-        gasLimit: 5000000, // Increase this value as needed
-      };
       // Appelle la fonction addLiquidity du routeur
       const txLiquidity = await router.addLiquidity(
         INHXAddress,
@@ -96,7 +92,7 @@ async function main() {
         0, // montant minimum pour MUSDT
         deployer.address, // destinataire des tokens LP
         deadline,
-        liquidityOverrides
+        overrides
       );
       await txLiquidity.wait();
       console.log("💧 Liquidité ajoutée avec succès!");
