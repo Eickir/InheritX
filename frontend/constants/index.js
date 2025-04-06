@@ -1708,6 +1708,11 @@ export const testamentManagerABI=[
         "internalType": "address",
         "name": "_paymentToken",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_baseTokenURI",
+        "type": "string"
       }
     ],
     "stateMutability": "nonpayable",
@@ -2024,6 +2029,31 @@ export const testamentManagerABI=[
       {
         "indexed": true,
         "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "cid",
+        "type": "string"
+      }
+    ],
+    "name": "TestamentMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "_testator",
         "type": "address"
       },
@@ -2145,6 +2175,19 @@ export const testamentManagerABI=[
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "baseTokenURI",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -2212,6 +2255,24 @@ export const testamentManagerABI=[
       {
         "internalType": "string",
         "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMintedTestament",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "uri",
         "type": "string"
       }
     ],
@@ -2295,6 +2356,25 @@ export const testamentManagerABI=[
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "lastMintedTokenId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -2443,6 +2523,19 @@ export const testamentManagerABI=[
       }
     ],
     "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_newBaseURI",
+        "type": "string"
+      }
+    ],
+    "name": "setBaseTokenURI",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
